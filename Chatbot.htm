@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>VOID SIM // TOTAL EMERGENT ENGINE</title>
+<title>VOID SIM // WORLD GAME ENGINE</title>
 
 <style>
 :root{
@@ -18,15 +18,14 @@
 
 body{
   background:var(--bg);
+  color:#ddd;
   height:100vh;
-  overflow:hidden;
   display:flex;
   justify-content:center;
   align-items:center;
-  color:#ddd;
+  overflow:hidden;
 }
 
-/* layout */
 .wrapper{
   width:min(1300px,98vw);
   height:94vh;
@@ -35,7 +34,6 @@ body{
   gap:10px;
 }
 
-/* panels */
 .panel{
   background:var(--glass);
   backdrop-filter:blur(18px);
@@ -50,30 +48,23 @@ body{
   text-align:center;
   color:var(--purple);
   border-bottom:1px solid rgba(255,255,255,0.1);
-  letter-spacing:2px;
 }
 
-/* CHAT */
 .chat{
   flex:1;
   padding:10px;
   overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
 }
 
 .msg{
-  max-width:85%;
-  padding:8px;
+  margin-bottom:6px;
   font-size:12px;
 }
 
-.user{align-self:flex-end;color:var(--purple);border:1px solid rgba(176,38,255,0.6)}
-.ai{align-self:flex-start;color:var(--red);border:1px solid rgba(255,42,42,0.6)}
-.sys{align-self:center;color:var(--cyan);opacity:0.8}
+.user{color:var(--purple)}
+.ai{color:var(--red)}
+.sys{color:var(--cyan)}
 
-/* input */
 .input{
   display:flex;
   border-top:1px solid rgba(255,255,255,0.1);
@@ -88,34 +79,23 @@ input{
 }
 
 button{
-  padding:10px 14px;
+  padding:10px;
   border:none;
   background:linear-gradient(90deg,var(--purple),var(--red));
 }
 
-/* world log */
 .world{
   padding:10px;
   overflow-y:auto;
-  font-size:11px;
+  font-size:12px;
 }
 
-/* canvas */
-canvas{
-  width:100%;
-  height:100%;
-  display:block;
-}
-
-/* fear overlay */
-.fear{
-  position:absolute;
-  bottom:0;
-  width:100%;
+/* STATUS BAR */
+.status{
+  padding:8px;
   font-size:11px;
-  padding:6px;
   color:var(--cyan);
-  background:rgba(0,0,0,0.6);
+  border-top:1px solid rgba(255,255,255,0.1);
 }
 </style>
 </head>
@@ -124,230 +104,190 @@ canvas{
 
 <div class="wrapper">
 
-  <!-- CHAT -->
-  <div class="panel">
-    <div class="header">VOID // USER INTERFACE</div>
-    <div class="chat" id="chat"></div>
-    <div class="input">
-      <input id="input" placeholder="speak..." />
-      <button onclick="send()">SEND</button>
-    </div>
+<!-- CHAT -->
+<div class="panel">
+  <div class="header">VOID GAME // PLAYER INTERFACE</div>
+  <div class="chat" id="chat"></div>
+  <div class="input">
+    <input id="input" placeholder="say something..." />
+    <button onclick="send()">SEND</button>
   </div>
+</div>
 
-  <!-- WORLD LOG -->
-  <div class="panel">
-    <div class="header">WORLD STATE // FACTIONS</div>
-    <div class="world" id="world"></div>
-  </div>
+<!-- WORLD -->
+<div class="panel">
+  <div class="header">WORLD STATE</div>
+  <div class="world" id="world"></div>
+</div>
 
-  <!-- NEURAL MAP -->
-  <div class="panel" style="position:relative;">
-    <div class="header">NEURAL TERRITORY MAP</div>
-    <canvas id="map"></canvas>
-    <div class="fear" id="fear">STABILITY: NOMINAL</div>
-  </div>
+<!-- STATUS -->
+<div class="panel">
+  <div class="header">GAME STATUS</div>
+  <div class="chat" id="status"></div>
+</div>
 
 </div>
 
 <script>
 
 /* =========================
-   WORLD STATE
+   GAME STATE
 ========================= */
 
-let YOU = {
-  name:"USER_ENTITY",
-  corruption:0,
-  influence:0
+let world = {
+  order: 40,
+  chaos: 40,
+  instability: 20,
+  turns:0
 };
 
-let factions = {
-  ORDER:{
-    power:40,
-    trust:0,
-    fear:0
-  },
-  CHAOS:{
-    power:40,
-    trust:0,
-    fear:0
-  },
-  OBSERVER:{
-    power:20,
-    trust:0,
-    fear:0
+/* multiplayer simulation */
+let echoes = [
+  "unknown user stabilized a sector",
+  "external anomaly increased chaos",
+  "remote system reduced instability"
+];
+
+/* =========================
+   HUMAN READABLE ENGINE
+========================= */
+
+function explainState(){
+  if(world.instability > 70){
+    return "The world is close to collapse. Chaos is too strong.";
   }
-};
-
-let worldInstability = 0;
-
-/* =========================
-   HASH
-========================= */
-
-function hash(s){
-  let h=2166136261;
-  for(let i=0;i<s.length;i++){
-    h^=s.charCodeAt(i);
-    h=Math.imul(h,16777619);
+  if(world.order > world.chaos){
+    return "Order is currently in control. The system is stable.";
   }
-  return h>>>0;
+  if(world.chaos > world.order){
+    return "Chaos is taking over. The system is becoming unpredictable.";
+  }
+  return "The system is balanced but fragile.";
 }
 
 /* =========================
-   EMERGENT RESPONSE
+   GAME LOGIC
 ========================= */
 
-function respond(t){
-  const h=hash(t);
+function update(input){
 
-  YOU.influence += 0.5;
+  world.turns++;
 
-  if(t.includes("order")) factions.ORDER.trust +=1;
-  if(t.includes("chaos")) factions.CHAOS.trust +=1;
-  if(t.includes("observe")) factions.OBSERVER.trust +=1;
+  if(input.includes("order")){
+    world.order += 5;
+    world.chaos -= 2;
+  }
 
-  let mood =
-    worldInstability>50 ? "WORLD FRAGMENTING" :
-    worldInstability>20 ? "STABILITY COMPROMISED" :
-    "SYSTEM HOLDING";
+  if(input.includes("chaos")){
+    world.chaos += 5;
+    world.order -= 2;
+  }
 
-  let dominant =
-    factions.CHAOS.power > factions.ORDER.power
-    ? "CHAOS DOMINANCE"
-    : "ORDER DOMINANCE";
+  if(input.includes("help")){
+    world.order += 2;
+  }
 
-  return `ENTITY RESPONSE:
-- system state: ${mood}
-- control vector: ${dominant}
-- encoded trace: ${h.toString(16).slice(0,10)}`;
+  world.instability = Math.abs(world.chaos - world.order);
+
+  // multiplayer echo
+  if(Math.random() < 0.3){
+    let e = echoes[Math.random()*echoes.length|0];
+    world.chaos += 2;
+    addWorld("REMOTE EVENT: " + e);
+  }
+
+  checkEndings();
 }
 
 /* =========================
-   FACTION MEMORY BEHAVIOR
+   ENDINGS
 ========================= */
 
-function factionThink(){
-  let f = Object.keys(factions);
-  let a = f[Math.random()*3|0];
+function checkEndings(){
 
-  let reaction =
-    YOU.influence > 50 ? "USER IS SYSTEMIC ANOMALY" :
-    YOU.influence > 20 ? "USER INFLUENCE DETECTED" :
-    "USER STABLE";
+  if(world.instability > 80){
+    addStatus("END: TOTAL COLLAPSE - The system failed completely.");
+    return;
+  }
 
-  factions[a].fear += YOU.influence * 0.01;
+  if(world.order > 80){
+    addStatus("END: CONTROLLED REALITY - Order fully dominates.");
+    return;
+  }
 
-  addWorld(`${a}: evaluates ${YOU.name} → ${reaction}`,"sys");
-}
-
-/* =========================
-   WORLD EVENTS
-========================= */
-
-function worldEvent(){
-  const e=[
-    "territory shift detected",
-    "instability spike",
-    "faction divergence widening",
-    "system containment strain"
-  ][Math.random()*4|0];
-
-  worldInstability += Math.random()*10;
-
-  addWorld("EVENT: "+e,"sys");
-
-  if(worldInstability>60){
-    addWorld("WARNING: CONTAINMENT MODE ACTIVE","sys");
+  if(world.chaos > 80){
+    addStatus("END: CHAOS ASCENSION - The system became unpredictable but alive.");
+    return;
   }
 }
-
-/* =========================
-   TERRITORY MAP
-========================= */
-
-const c=document.getElementById("map");
-const ctx=c.getContext("2d");
-
-function resize(){
-  c.width=c.clientWidth;
-  c.height=c.clientHeight;
-}
-window.addEventListener("resize",resize);
-resize();
-
-function draw(){
-  ctx.clearRect(0,0,c.width,c.height);
-
-  let total =
-    factions.ORDER.power +
-    factions.CHAOS.power +
-    factions.OBSERVER.power;
-
-  let o = factions.ORDER.power/total;
-  let x = factions.CHAOS.power/total;
-
-  ctx.fillStyle="#b026ff";
-  ctx.fillRect(0,0,c.width*o,c.height);
-
-  ctx.fillStyle="#ff2a2a";
-  ctx.fillRect(c.width*o,0,c.width*x,c.height);
-
-  ctx.fillStyle="#00f0ff";
-  ctx.fillRect(c.width*(o+x),0,c.width*(1-o-x),c.height);
-
-  requestAnimationFrame(draw);
-}
-draw();
 
 /* =========================
    UI
 ========================= */
 
 const chat=document.getElementById("chat");
-const world=document.getElementById("world");
+const worldBox=document.getElementById("world");
+const status=document.getElementById("status");
 const input=document.getElementById("input");
-const fear=document.getElementById("fear");
 
-function addChat(t,type){
+function addChat(t,c){
   const d=document.createElement("div");
-  d.className=type==="user"?"msg user":type==="ai"?"msg ai":"msg sys";
+  d.className="msg "+c;
   d.textContent=t;
   chat.appendChild(d);
   chat.scrollTop=chat.scrollHeight;
 }
 
-function addWorld(t,type){
+function addWorld(t){
   const d=document.createElement("div");
+  d.className="msg sys";
   d.textContent=t;
-  world.appendChild(d);
-  world.scrollTop=world.scrollHeight;
+  worldBox.appendChild(d);
+  worldBox.scrollTop=worldBox.scrollHeight;
 }
 
+function addStatus(t){
+  const d=document.createElement("div");
+  d.className="msg sys";
+  d.textContent=t;
+  status.appendChild(d);
+}
+
+/* =========================
+   PLAYER RESPONSE
+========================= */
+
+function respond(input){
+  let explanation = explainState();
+
+  return `Here is what is happening:
+- ${explanation}
+- Order level: ${world.order}
+- Chaos level: ${world.chaos}
+- Instability: ${world.instability}
+
+Your input changed the system state.`;
+}
+
+/* =========================
+   SEND
+========================= */
+
 function send(){
-  const t=input.value.trim();
+  let t=input.value.trim();
   if(!t)return;
 
   addChat(t,"user");
+
+  update(t);
+
   addChat(respond(t),"ai");
 
   input.value="";
 }
 
-/* =========================
-   AUTONOMOUS SYSTEM
-========================= */
-
-setInterval(factionThink,4000);
-setInterval(worldEvent,7000);
-setInterval(()=>{
-  fear.textContent =
-    worldInstability>60 ? "STABILITY: CRITICAL FAILURE RISK" :
-    worldInstability>30 ? "STABILITY: DEGRADED" :
-    "STABILITY: NOMINAL";
-},1000);
-
-addChat("WORLD ENGINE INITIALIZED","sys");
+/* boot */
+addChat("You are now inside a system simulation. Your words change the world.","sys");
 
 </script>
 
