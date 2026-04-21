@@ -2,216 +2,239 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>VOID TERMINAL CHAT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VOID CHAT // NEURAL INFINITY ENGINE</title>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap');
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: 'Orbitron', monospace;
+:root{
+  --bg:#000;
+  --purple:#b026ff;
+  --red:#ff2a2a;
+  --glass: rgba(0,0,0,0.55);
+  --text:#e6e6e6;
 }
 
-body {
-  background: #000;
-  color: white;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:system-ui;
 }
 
-/* GLITCH HEADER */
-header {
-  text-align: center;
-  padding: 18px;
-  font-size: 22px;
-  letter-spacing: 4px;
-  position: relative;
-  color: #ff003c;
-  text-shadow:
-    0 0 10px #ff003c,
-    0 0 20px #9900ff;
-  animation: glitch 1.5s infinite;
+body{
+  background:var(--bg);
+  color:var(--text);
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:hidden;
 }
 
-@keyframes glitch {
-  0% { transform: translate(0); filter: hue-rotate(0deg); }
-  20% { transform: translate(-1px, 1px); }
-  40% { transform: translate(1px, -1px); }
-  60% { transform: translate(-2px, 1px); }
-  80% { transform: translate(1px, 2px); }
-  100% { transform: translate(0); filter: hue-rotate(360deg); }
+/* scanlines */
+body::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.02) 0px,
+    rgba(255,255,255,0.02) 1px,
+    transparent 3px,
+    transparent 6px
+  );
+  animation:scan 8s linear infinite;
 }
 
-/* CHAT WINDOW */
-#chat {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+@keyframes scan{
+  from{transform:translateY(0)}
+  to{transform:translateY(60px)}
 }
 
-/* GLASS PANEL */
-.message {
-  max-width: 70%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  backdrop-filter: blur(12px);
-  background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.08);
-  line-height: 1.4;
-  animation: fadeIn 0.2s ease-in;
+.wrapper{
+  width:min(900px,95vw);
+  height:90vh;
+  display:flex;
+  flex-direction:column;
+  background:var(--glass);
+  backdrop-filter: blur(18px);
+  border:1px solid rgba(176,38,255,0.4);
+  box-shadow:0 0 30px rgba(255,0,0,0.15);
+  overflow:hidden;
+  position:relative;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+.header{
+  padding:14px;
+  text-align:center;
+  letter-spacing:3px;
+  color:var(--purple);
+  text-shadow:0 0 12px var(--purple);
+  border-bottom:1px solid rgba(255,255,255,0.1);
 }
 
-/* USER (PURPLE VOID GLASS) */
-.user {
-  align-self: flex-end;
-  color: #c77dff;
-  box-shadow:
-    0 0 10px #a020f0,
-    0 0 25px #6a00ff;
-  border: 1px solid #7b2cff;
+.chat{
+  flex:1;
+  padding:16px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
 
-/* AI (RED NEON VOID) */
-.ai {
-  align-self: flex-start;
-  color: #ff3b3b;
-  box-shadow:
-    0 0 10px #ff003c,
-    0 0 25px #ff004f;
-  border: 1px solid #ff004f;
-}
-
-/* INPUT AREA */
-#inputArea {
-  display: flex;
-  padding: 12px;
-  background: rgba(10,10,10,0.8);
-  border-top: 1px solid #222;
+.msg{
+  max-width:75%;
+  padding:10px 14px;
+  border-radius:10px;
   backdrop-filter: blur(10px);
+  animation:pop .15s ease-out;
 }
 
-input {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  outline: none;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  border-radius: 8px;
-  border: 1px solid #333;
-  box-shadow: 0 0 10px rgba(128,0,255,0.2);
+@keyframes pop{
+  from{transform:scale(0.9);opacity:0}
+  to{transform:scale(1);opacity:1}
 }
 
-button {
-  margin-left: 10px;
-  padding: 12px 18px;
-  background: black;
-  border: 1px solid #ff003c;
-  color: #ff003c;
-  cursor: pointer;
-  border-radius: 8px;
-  box-shadow: 0 0 12px #ff003c;
-  transition: 0.2s;
+.user{
+  align-self:flex-end;
+  color:var(--purple);
+  border:1px solid rgba(176,38,255,0.7);
+  box-shadow:0 0 15px rgba(176,38,255,0.5);
+  background:rgba(0,0,0,0.4);
 }
 
-button:hover {
-  box-shadow: 0 0 20px #a020f0;
-  border-color: #a020f0;
-  color: #a020f0;
+.ai{
+  align-self:flex-start;
+  color:var(--red);
+  border:1px solid rgba(255,42,42,0.7);
+  box-shadow:0 0 15px rgba(255,42,42,0.5);
+  background:rgba(0,0,0,0.4);
 }
+
+.input{
+  display:flex;
+  border-top:1px solid rgba(255,255,255,0.1);
+}
+
+input{
+  flex:1;
+  padding:12px;
+  background:black;
+  border:1px solid rgba(176,38,255,0.4);
+  color:white;
+  outline:none;
+}
+
+button{
+  padding:12px 16px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  background:linear-gradient(90deg,var(--purple),var(--red));
+}
+button:hover{filter:brightness(1.2)}
 </style>
 </head>
 
 <body>
 
-<header>VOID // NEURAL CHAT INTERFACE</header>
+<div class="wrapper">
+  <div class="header">VOID INTELLIGENCE // INFINITE RESPONSE CORE</div>
 
-<div id="chat"></div>
+  <div class="chat" id="chat"></div>
 
-<div id="inputArea">
-  <input id="msg" placeholder="Enter transmission..." />
-  <button onclick="sendMessage()">SEND</button>
+  <div class="input">
+    <input id="input" placeholder="Transmit query..." />
+    <button onclick="send()">SEND</button>
+  </div>
 </div>
 
 <script>
-/* =========================
-   CONFIG — PUT YOUR KEY HERE
-========================= */
-const HF_API_KEY = "YOUR_HUGGING_FACE_API_KEY_HERE";
-const MODEL = "mistralai/Mistral-7B-Instruct-v0.2";
+// ===== CORE VOID ENGINE =====
 
-/* ========================= */
-
-const chat = document.getElementById("chat");
-const input = document.getElementById("msg");
-
-function addMessage(text, type) {
-  const div = document.createElement("div");
-  div.className = `message ${type}`;
-  div.textContent = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-  return div;
-}
-
-async function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  addMessage(text, "user");
-  input.value = "";
-
-  const aiBubble = addMessage("...", "ai");
-
-  try {
-    const response = await fetch(`https://api-inference.huggingface.co/models/${MODEL}`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${HF_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        inputs: text,
-        parameters: {
-          max_new_tokens: 256,
-          temperature: 0.7,
-          return_full_text: false
-        }
-      })
-    });
-
-    const data = await response.json();
-
-    let output =
-      data?.[0]?.generated_text ||
-      data?.generated_text ||
-      JSON.stringify(data);
-
-    aiBubble.textContent = output;
-
-  } catch (err) {
-    aiBubble.textContent = "ERROR: SIGNAL LOST IN THE VOID";
+// deterministic hash (forces repeatable "personality")
+function hash(str){
+  let h = 2166136261;
+  for(let i=0;i<str.length;i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h,16777619);
   }
+  return h >>> 0;
+}
 
+// response layers (small but combinatorial explosion)
+const subjects = [
+  "The system", "Void instance", "Neural core", "Signal lattice",
+  "Archive node", "Synthetic mind", "Deep process"
+];
+
+const verbs = [
+  "decoded", "projected", "refracted", "indexed",
+  "collapsed", "reconstructed", "mapped"
+];
+
+const objects = [
+  "your query stream", "the input shadow", "semantic noise",
+  "probability field", "data echo", "concept fragment"
+];
+
+const endings = [
+  "without resistance.", "through fractured layers.",
+  "into recursive depth.", "beyond stable interpretation.",
+  "across unstable memory.", "inside synthetic drift."
+];
+
+const extraMods = [
+  "No anomalies detected.",
+  "Signal coherence at 87%.",
+  "Reality distortion minimal.",
+  "Latency within void tolerance.",
+  "Pattern recognized.",
+  "Echo signature stored."
+];
+
+// generate infinite-style response
+function generateResponse(input){
+  const h = hash(input);
+
+  const s = subjects[h % subjects.length];
+  const v = verbs[(h>>2) % verbs.length];
+  const o = objects[(h>>4) % objects.length];
+  const e = endings[(h>>6) % endings.length];
+  const m = extraMods[(h>>8) % extraMods.length];
+
+  return `${s} ${v} ${o} ${e} ${m}`;
+}
+
+// UI
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+
+function add(text, type){
+  const d = document.createElement("div");
+  d.className = "msg " + type;
+  d.textContent = text;
+  chat.appendChild(d);
   chat.scrollTop = chat.scrollHeight;
 }
 
-/* ENTER KEY SUPPORT */
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage();
+function send(){
+  const t = input.value.trim();
+  if(!t) return;
+
+  add(t,"user");
+  input.value="";
+
+  setTimeout(()=>{
+    add(generateResponse(t),"ai");
+  },300);
+}
+
+input.addEventListener("keydown",(e)=>{
+  if(e.key==="Enter") send();
 });
+
+add("VOID CORE ONLINE. INFINITE RESPONSE MATRIX ACTIVE.","ai");
 </script>
 
 </body>
