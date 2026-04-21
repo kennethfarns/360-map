@@ -70,6 +70,7 @@ setInterval(() => {
 
 // 🌍 UTC LINE (FIXED PROPERLY)
 const utcLine = [];
+
 for (let i = -90; i <= 90; i++) {
   utcLine.push(0, i);
 }
@@ -77,8 +78,8 @@ for (let i = -90; i <= 90; i++) {
 viewer.entities.add({
   polyline: {
     positions: Cesium.Cartesian3.fromDegreesArray(utcLine),
-    width: 3,
-    material: Cesium.Color.CYAN
+    width: 2,
+    material: Cesium.Color.CYAN.withAlpha(0.8)
   }
 });
 
@@ -125,39 +126,53 @@ function addPin(){
 
 // 🖱 Street View
 viewer.screenSpaceEventHandler.setInputAction(function(click){
-  const cartesian = viewer.scene.pickPosition(click.position);
-  if(cartesian){
-    const c = Cesium.Cartographic.fromCartesian(cartesian);
-    const lat = Cesium.Math.toDegrees(c.latitude);
-    const lng = Cesium.Math.toDegrees(c.longitude);
 
-    window.open(
-      `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`,
-      "_blank"
-    );
-  }
+  const picked = viewer.scene.pick(click.position);
+  if (!picked) return; // only globe clicks
+
+  const cartesian = viewer.scene.pickPosition(click.position);
+  if (!cartesian) return;
+
+  const c = Cesium.Cartographic.fromCartesian(cartesian);
+  const lat = Cesium.Math.toDegrees(c.latitude);
+  const lng = Cesium.Math.toDegrees(c.longitude);
+
+  window.open(
+    `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`,
+    "_blank"
+  );
+
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
 // ✈️ Aircraft (unchanged but safe)
+let aircraftEntities = [];
+
 async function flights(){
   try{
     const res = await fetch("https://opensky-network.org/api/states/all");
     const data = await res.json();
 
+    // clear old aircraft
+    aircraftEntities.forEach(e => viewer.entities.remove(e));
+    aircraftEntities = [];
+
     data.states.slice(0,40).forEach(f=>{
       if(f[5] && f[6]){
-        viewer.entities.add({
+        let e = viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(f[5], f[6]),
           point: {
             pixelSize: 4,
             color: Cesium.Color.YELLOW
           }
         });
+        aircraftEntities.push(e);
       }
     });
+
   }catch(e){}
 }
-setInterval(flights,10000);
+
+setInterval(flights, 10000);
 
 // 🌧 Weather (unchanged)
 async function weather(){
