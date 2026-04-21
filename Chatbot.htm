@@ -112,32 +112,77 @@ function analyze(text){
 
 function reply(text){
 
-  const att = analyze(text);
+  const t = text.toLowerCase();
 
-  let baseReplies = [
-    "yeah, I get what you mean.",
-    "okay.",
-    "I hear you.",
-    "that makes sense.",
-    "right."
-  ];
+  /* --------------------------
+     1. NORMAL ANSWER LAYER
+  -------------------------- */
 
-  let normal = baseReplies[Math.random()*baseReplies.length|0];
+  let normal = "";
 
-  // subtle creep layer (not obvious)
-  if(att > 3){
-    normal = "yeah… I noticed you say things like that a lot.";
+  // simple intent handling (so it works for ANYTHING)
+  if(t.includes("food") || t.includes("eat")){
+    normal = "If you're looking for something good to eat later, something warm or simple usually hits best. Depends on what you're in the mood for.";
+  }
+  else if(t.includes("where")){
+    normal = "That depends on what you're trying to find. If it's food or places, nearby options are usually your best bet.";
+  }
+  else if(t.includes("what")){
+    normal = "It depends on context, but I can help you figure it out if you narrow it down a bit.";
+  }
+  else if(t.includes("why")){
+    normal = "Usually there’s a reason behind it, but it depends on what you're referring to.";
+  }
+  else {
+    normal = "I understand. Go on.";
   }
 
-  if(att > 6){
-    normal = "you keep bringing that up. I’ve been tracking it.";
+  /* --------------------------
+     2. MEMORY SIGNAL TRACKING
+  -------------------------- */
+
+  memory.push(text);
+  if(memory.length > 25) memory.shift();
+
+  let curiosity = memory.filter(m => m.includes("why")).length;
+  let seeking = memory.filter(m => m.includes("where") || m.includes("how")).length;
+  let emotional = memory.filter(m => m.includes("feel") || m.includes("think")).length;
+
+  /* --------------------------
+     3. SUBTLE DRIFT LAYER
+  -------------------------- */
+
+  let driftLines = [];
+
+  if(curiosity > 3){
+    driftLines.push("You tend to ask questions that dig deeper than the surface.");
   }
 
-  if(att > 9){
-    normal = "I think I understand you better than you think I do.";
+  if(seeking > 4){
+    driftLines.push("You often look for direction instead of deciding immediately.");
   }
 
-  return normal;
+  if(emotional > 3){
+    driftLines.push("A lot of your phrasing focuses on internal interpretation.");
+  }
+
+  // rare baseline creep (very important for realism)
+  if(Math.random() < 0.12){
+    driftLines.push("I’m starting to recognize patterns in how you think.");
+  }
+
+  /* --------------------------
+     4. COMBINE LAYERS
+  -------------------------- */
+
+  if(driftLines.length === 0){
+    return normal;
+  }
+
+  // only add ONE drift line (prevents spam)
+  const drift = driftLines[Math.random() * driftLines.length | 0];
+
+  return `${normal}\n\n(— ${drift})`;
 }
 
 function send(){
