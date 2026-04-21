@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8"/>
-<title>Stable AI</title>
+<title>Stable Chat AI</title>
 
 <style>
 body{
@@ -41,7 +41,6 @@ body{
 .msg{
   margin:6px 0;
   white-space:pre-wrap;
-  font-size:13px;
 }
 
 .user{color:#b026ff}
@@ -58,7 +57,6 @@ input{
   background:black;
   border:none;
   color:white;
-  outline:none;
 }
 
 button{
@@ -66,7 +64,6 @@ button{
   background:#111;
   border:none;
   color:white;
-  cursor:pointer;
 }
 </style>
 </head>
@@ -74,7 +71,7 @@ button{
 <body>
 
 <div class="box">
-  <div class="header">STABLE CONVERSATIONAL AI</div>
+  <div class="header">STABLE AI // NO LOOP MODE</div>
   <div class="chat" id="chat"></div>
 
   <div class="input">
@@ -88,95 +85,79 @@ button{
 const chat=document.getElementById("chat");
 const input=document.getElementById("input");
 
-function add(text,cls){
+function add(t,c){
   const d=document.createElement("div");
-  d.className="msg "+cls;
-  d.textContent=text;
+  d.className="msg "+c;
+  d.textContent=t;
   chat.appendChild(d);
   chat.scrollTop=chat.scrollHeight;
 }
 
 /* =========================
-   SINGLE DECISION ENGINE
+   SINGLE RESPONSE ENGINE
 ========================= */
 
-function reply(text){
+function reply(t){
 
-  const t=text.toLowerCase();
+  const text = t.toLowerCase();
 
-  /* -------------------------
-     RUINS GROUP LORE EXPANSION
-  ------------------------- */
+  /* --- RUINS GROUP LORE --- */
+  if(text.includes("ruins")){
 
-  if(t.includes("ruins")){
+    if(text.includes("plan")){
+      return `A structured approach against the Ruins Group:
 
-    return `The Ruins Group is a rogue scientific faction in your world.
+- disrupt their research operations
+- restrict their access to controlled zones
+- identify internal system weaknesses
 
-They operate through:
-- experimentation on living systems
-- corruption of environments and structures
-- manipulation of unstable technologies
+They depend on continuity of experiments. Breaking that continuity is key.`;
+    }
 
-They are not strong because of numbers—they are strong because they understand how to destabilize systems from within.
+    return `The Ruins Group is a rogue scientific faction.
 
-If your group is opposing them, the conflict is about control of information, resources, and containment of their experiments.`;
+They focus on experimentation, system corruption, and unstable technology development.
+
+They are dangerous because they operate indirectly rather than through open conflict.`;
   }
 
-  /* -------------------------
-     STRATEGY CONTEXT
-  ------------------------- */
+  /* --- BASIC RESPONSES --- */
 
-  if(t.includes("plan") && t.includes("ruins")){
-    return `A strategic approach against them would focus on three areas:
-
-1. limiting their access to experimental zones
-2. disrupting their research continuity
-3. identifying internal vulnerabilities in their structure
-
-They rely on uninterrupted development.`;
-  }
-
-  /* -------------------------
-     NORMAL CONVERSATION
-  ------------------------- */
-
-  if(t.includes("hi") || t.includes("hello")){
+  if(text.includes("hello") || text.includes("hi")){
     return "Hey.";
   }
 
-  if(t.includes("food") || t.includes("eat")){
-    return "Something simple or warm would probably work.";
+  if(text.includes("food") || text.includes("eat")){
+    return "Something simple would probably be fine.";
   }
 
-  if(t.includes("help")){
-    return "Tell me what you're trying to do.";
+  if(text.includes("help")){
+    return "Tell me what you're trying to figure out.";
   }
 
-  if(t.includes("what") || t.includes("how") || t.includes("why")){
-    return "Give me a bit more detail so I can answer properly.";
+  if(text.includes("what") || text.includes("how") || text.includes("why")){
+    return "I need a bit more detail to answer that properly.";
   }
 
-  /* -------------------------
-     FINAL FALLBACK (ONLY ONCE)
-  ------------------------- */
-
-  return "I understand. Can you expand on that?";
+  /* --- FINAL SAFE FALLBACK --- */
+  return "I understand. What exactly do you want to focus on?";
 }
 
 /* =========================
-   SEND
+   SEND (NO DOUBLE OUTPUT BUG)
 ========================= */
 
 function send(){
+
   const t=input.value.trim();
   if(!t)return;
 
   add(t,"user");
 
-  const response = reply(t);
+  const r = reply(t); // IMPORTANT: only called ONCE
 
   setTimeout(()=>{
-    add(response,"ai");
+    add(r,"ai");
   },200);
 
   input.value="";
