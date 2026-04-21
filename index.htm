@@ -33,11 +33,17 @@ input, button {
 <div id="hud">
 <div>🌐 COMMAND GLOBE</div>
 
-Lat <input id="lat">
-<select id="latDir"><option>N</option><option>S</option></select><br>
+Lat <input id="latInput" size="5">
+<select id="latDir">
+  <option>N</option>
+  <option>S</option>
+</select>
 
-Lng <input id="lng">
-<select id="lngDir"><option>E</option><option>W</option></select><br>
+Lng <input id="lngInput" size="5">
+<select id="lngDir">
+  <option>E</option>
+  <option>W</option>
+</select>
 
 <button onclick="addPin()">Pin</button>
 <div id="time"></div>
@@ -56,17 +62,21 @@ const viewer = new Cesium.Viewer("cesiumContainer", {
 // 🌞 Lighting
 viewer.scene.globe.enableLighting = true;
 
-// 🕒 UTC Clock
-setInterval(()=>{
-  time.innerText = "UTC: " + new Date().toUTCString();
-},1000);
+// 🕒 UTC Clock (FIXED)
+const timeEl = document.getElementById("time");
+setInterval(() => {
+  timeEl.innerText = "UTC: " + new Date().toUTCString();
+}, 1000);
 
-// 🌍 UTC line
+// 🌍 UTC LINE (FIXED PROPERLY)
+const utcLine = [];
+for (let i = -90; i <= 90; i++) {
+  utcLine.push(0, i);
+}
+
 viewer.entities.add({
   polyline: {
-    positions: Cesium.Cartesian3.fromDegreesArray(
-      Array.from({length:181},(_,i)=>[0,-90+i]).flat()
-    ),
+    positions: Cesium.Cartesian3.fromDegreesArray(utcLine),
     width: 3,
     material: Cesium.Color.CYAN
   }
@@ -75,21 +85,37 @@ viewer.entities.add({
 // 🧭 Convert coords
 function convert(val, dir){
   let n = parseFloat(val);
-  if(isNaN(n)) return null;
-  if(dir==="S"||dir==="W") n*=-1;
+  if (isNaN(n)) return null;
+  if (dir === "S" || dir === "W") n *= -1;
   return n;
 }
 
-// 📍 Pin
+// 📍 SINGLE CLEAN addPin (FIXED)
 function addPin(){
-  let lat = convert(latInput.value, latDir.value);
-  let lng = convert(lngInput.value, lngDir.value);
-  if(lat==null||lng==null) return;
+
+  const latVal = document.getElementById("latInput").value;
+  const lngVal = document.getElementById("lngInput").value;
+
+  const latDir = document.getElementById("latDir").value;
+  const lngDir = document.getElementById("lngDir").value;
+
+  let lat = convert(latVal, latDir);
+  let lng = convert(lngVal, lngDir);
+
+  if (lat === null || lng === null) return;
 
   viewer.entities.add({
     position: Cesium.Cartesian3.fromDegrees(lng, lat),
-    point: { pixelSize: 10, color: Cesium.Color.RED },
-    label: { text: lat.toFixed(2)+","+lng.toFixed(2), fillColor: Cesium.Color.CYAN }
+    point: {
+      pixelSize: 10,
+      color: Cesium.Color.RED
+    },
+    label: {
+      text: `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`,
+      fillColor: Cesium.Color.CYAN,
+      outlineColor: Cesium.Color.BLACK,
+      outlineWidth: 2
+    }
   });
 
   viewer.camera.flyTo({
@@ -112,16 +138,20 @@ viewer.screenSpaceEventHandler.setInputAction(function(click){
   }
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-// ✈️ Aircraft
+// ✈️ Aircraft (unchanged but safe)
 async function flights(){
   try{
     const res = await fetch("https://opensky-network.org/api/states/all");
     const data = await res.json();
+
     data.states.slice(0,40).forEach(f=>{
-      if(f[5]&&f[6]){
+      if(f[5] && f[6]){
         viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(f[5], f[6]),
-          point: { pixelSize: 4, color: Cesium.Color.YELLOW }
+          point: {
+            pixelSize: 4,
+            color: Cesium.Color.YELLOW
+          }
         });
       }
     });
@@ -129,11 +159,11 @@ async function flights(){
 }
 setInterval(flights,10000);
 
-// 🌧 Weather (basic markers)
+// 🌧 Weather (unchanged)
 async function weather(){
   try{
     const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current_weather=true");
-    const data = await res.json();
+    await res.json();
     console.log("Weather Loaded");
   }catch(e){}
 }
