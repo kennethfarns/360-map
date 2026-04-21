@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8"/>
-<title>Clean Adaptive AI</title>
+<title>Stable AI</title>
 
 <style>
 body{
@@ -62,24 +62,23 @@ input{
 }
 
 button{
-  padding:10px 14px;
+  padding:10px;
   background:#111;
   border:none;
   color:white;
   cursor:pointer;
 }
-button:hover{background:#1a1a1a}
 </style>
 </head>
 
 <body>
 
 <div class="box">
-  <div class="header">STABLE ADAPTIVE AI</div>
+  <div class="header">STABLE CONVERSATIONAL AI</div>
   <div class="chat" id="chat"></div>
 
   <div class="input">
-    <input id="input" placeholder="say something..." />
+    <input id="input" placeholder="type..." />
     <button onclick="send()">send</button>
   </div>
 </div>
@@ -88,12 +87,6 @@ button:hover{background:#1a1a1a}
 
 const chat=document.getElementById("chat");
 const input=document.getElementById("input");
-
-let memory=[];
-let style={
-  direct:0,
-  questions:0
-};
 
 function add(text,cls){
   const d=document.createElement("div");
@@ -104,76 +97,70 @@ function add(text,cls){
 }
 
 /* =========================
-   SINGLE RESPONSE ENGINE
+   SINGLE DECISION ENGINE
 ========================= */
 
 function reply(text){
 
   const t=text.toLowerCase();
 
-  memory.push(text);
-  if(memory.length>20) memory.shift();
+  /* -------------------------
+     RUINS GROUP LORE EXPANSION
+  ------------------------- */
 
-  /* track style */
-  if(t.includes("what")||t.includes("how")||t.includes("why")){
-    style.questions++;
-  }
+  if(t.includes("ruins")){
 
-  if(t.length < 6){
-    style.direct++;
+    return `The Ruins Group is a rogue scientific faction in your world.
+
+They operate through:
+- experimentation on living systems
+- corruption of environments and structures
+- manipulation of unstable technologies
+
+They are not strong because of numbers—they are strong because they understand how to destabilize systems from within.
+
+If your group is opposing them, the conflict is about control of information, resources, and containment of their experiments.`;
   }
 
   /* -------------------------
-     CORE RESPONSE (ONLY ONE)
+     STRATEGY CONTEXT
   ------------------------- */
 
-  let response = "";
+  if(t.includes("plan") && t.includes("ruins")){
+    return `A strategic approach against them would focus on three areas:
+
+1. limiting their access to experimental zones
+2. disrupting their research continuity
+3. identifying internal vulnerabilities in their structure
+
+They rely on uninterrupted development.`;
+  }
+
+  /* -------------------------
+     NORMAL CONVERSATION
+  ------------------------- */
 
   if(t.includes("hi") || t.includes("hello")){
-    response = "Hey. I’m here.";
+    return "Hey.";
   }
 
-  else if(t.includes("food") || t.includes("eat")){
-    response = "Something simple would probably work best depending on your mood.";
+  if(t.includes("food") || t.includes("eat")){
+    return "Something simple or warm would probably work.";
   }
 
-  else if(t.includes("ruins")){
-    response = "The Ruins Group is a hostile faction. If you're dealing with them, focus on disruption and information control.";
+  if(t.includes("help")){
+    return "Tell me what you're trying to do.";
   }
 
-  else if(t.includes("help")){
-    response = "Tell me what you're trying to do and I’ll help you structure it.";
-  }
-
-  else {
-    response = "Okay. What are you trying to figure out?";
+  if(t.includes("what") || t.includes("how") || t.includes("why")){
+    return "Give me a bit more detail so I can answer properly.";
   }
 
   /* -------------------------
-     OPTIONAL SINGLE LAYER ONLY
+     FINAL FALLBACK (ONLY ONCE)
   ------------------------- */
 
-  let subtle = "";
-
-  let score = style.questions + style.direct;
-
-  if(score > 10 && Math.random() < 0.2){
-    subtle = "You tend to circle around ideas before acting.";
-  }
-
-  if(score > 15 && Math.random() < 0.15){
-    subtle = "I’m starting to recognize how you phrase things.";
-  }
-
-  /* -------------------------
-     FINAL OUTPUT (NO STACKING BUG)
-  ------------------------- */
-
-  if(subtle){
-    return response + "\n\n— " + subtle;
-  }
-
-  return response;
+  return "I understand. Can you expand on that?";
 }
 
 /* =========================
@@ -186,14 +173,15 @@ function send(){
 
   add(t,"user");
 
+  const response = reply(t);
+
   setTimeout(()=>{
-    add(reply(t),"ai");
+    add(response,"ai");
   },200);
 
   input.value="";
 }
 
-/* START */
 add("online.", "ai");
 
 </script>
