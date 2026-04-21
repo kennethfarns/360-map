@@ -2,58 +2,64 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D UTC Globe</title>
-<script src="https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three-globe@2.30.0/build/three-globe.min.js"></script>
-<script src="https://d3js.org/d3.v7.min.js"></script>
+<title>UTC Globe</title>
 <style>
-  body { margin: 0; overflow: hidden; background: #000; }
-  canvas { display: block; }
+  body { margin: 0; overflow: hidden; background: black; }
 </style>
 </head>
 <body>
-<script>
+
+<script type="module">
+import * as THREE from "https://unpkg.com/three@0.162.0/build/three.module.js";
+import ThreeGlobe from "https://unpkg.com/three-globe@2.30.0/dist/three-globe.module.js";
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.z = 300;
+
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 350;
-
+// 🌍 Create globe
 const globe = new ThreeGlobe()
-  .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
-  .showAtmosphere(true)
-  .atmosphereColor('#00ffff')
-  .atmosphereAltitude(0.2);
+  .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-night.jpg");
 
-// Highlight UTC meridian (0° longitude) using polylines
-const utcLine = Array.from({length: 181}, (_, i) => ({ lat: -90 + i, lng: 0 }));
-globe.polylinesData([{ path: utcLine }])
-     .polylinesColor(() => '#00ffff')
-     .polylinesWidth(() => 2);
+// UTC line (0° longitude)
+const utcLine = Array.from({ length: 181 }, (_, i) => ({
+  lat: -90 + i,
+  lng: 0
+}));
+
+globe
+  .polylinesData([{ path: utcLine }])
+  .polylinesColor(() => "#00ffff")
+  .polylinesWidth(2);
 
 scene.add(globe);
 
-// Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-dirLight.position.set(200, 200, 200);
-scene.add(ambientLight, dirLight);
+// 💡 Lighting
+scene.add(new THREE.AmbientLight(0xffffff, 1));
+const light = new THREE.DirectionalLight(0xffffff, 0.8);
+light.position.set(100, 100, 100);
+scene.add(light);
 
+// 🔄 Animate
 function animate() {
   requestAnimationFrame(animate);
-  globe.rotation.y += 0.0015; // slow rotation
+  globe.rotation.y += 0.002;
   renderer.render(scene, camera);
 }
 animate();
 
-window.addEventListener('resize', () => {
+// 📱 Resize fix
+window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
+
 </body>
 </html>
