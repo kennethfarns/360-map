@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>VOID MIRROR AI</title>
+<title>VOID LORE AI</title>
 
 <style>
 body{
@@ -16,7 +16,7 @@ body{
   height:100vh;
 }
 
-.container{
+.box{
   width:850px;
   height:90vh;
   display:flex;
@@ -27,11 +27,10 @@ body{
 
 .header{
   padding:10px;
-  font-size:12px;
   text-align:center;
+  font-size:12px;
   color:#b026ff;
   border-bottom:1px solid #222;
-  letter-spacing:1px;
 }
 
 .chat{
@@ -66,25 +65,22 @@ input{
 button{
   padding:10px 14px;
   background:#111;
-  color:white;
   border:none;
+  color:white;
   cursor:pointer;
 }
-
-button:hover{
-  background:#1a1a1a;
-}
+button:hover{background:#1a1a1a}
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <div class="header">VOID MIRROR AI // ADAPTIVE CONVERSATIONAL SYSTEM</div>
+<div class="box">
+  <div class="header">LORE NODE // ADAPTIVE STORY INTELLIGENCE</div>
   <div class="chat" id="chat"></div>
 
   <div class="input">
-    <input id="input" placeholder="say something..." />
+    <input id="input" placeholder="speak..." />
     <button onclick="send()">send</button>
   </div>
 </div>
@@ -94,27 +90,12 @@ button:hover{
 const chat=document.getElementById("chat");
 const input=document.getElementById("input");
 
-/* =========================
-   PERSISTENT STATE
-========================= */
-
-let memory = JSON.parse(localStorage.getItem("vm_memory") || "[]");
-
-let profile = JSON.parse(localStorage.getItem("vm_profile") || JSON.stringify({
+let memory=[];
+let profile={
   curiosity:0,
-  direction:0,
-  emotion:0,
-  avgLength:0
-}));
-
-function save(){
-  localStorage.setItem("vm_memory", JSON.stringify(memory));
-  localStorage.setItem("vm_profile", JSON.stringify(profile));
-}
-
-/* =========================
-   UI
-========================= */
+  conflict:0,
+  planning:0
+};
 
 function add(text,cls){
   const d=document.createElement("div");
@@ -124,124 +105,117 @@ function add(text,cls){
   chat.scrollTop=chat.scrollHeight;
 }
 
-/* =========================
-   ANALYSIS ENGINE
-========================= */
-
 function analyze(text){
-
-  const words=text.split(" ");
-  profile.avgLength = (profile.avgLength + words.length)/2;
-
-  if(text.includes("why")) profile.curiosity++;
-  if(text.includes("how")) profile.curiosity++;
-
-  if(text.includes("where") || text.includes("should")) profile.direction++;
-
-  if(text.includes("feel") || text.includes("think")) profile.emotion++;
-
   memory.push(text);
   if(memory.length>30) memory.shift();
 
-  save();
+  const t=text.toLowerCase();
+
+  if(t.includes("why")) profile.curiosity++;
+  if(t.includes("how")) profile.curiosity++;
+
+  if(t.includes("ruins") || t.includes("enemy")) profile.conflict++;
+
+  if(t.includes("plan") || t.includes("strategy")) profile.planning++;
 }
 
 /* =========================
-   RESPONSE ENGINE
+   CORE RESPONSE ENGINE
 ========================= */
 
 function reply(text){
 
   analyze(text);
+  const t=text.toLowerCase();
 
-  let base = "";
+  let base="";
 
-  const t = text.toLowerCase();
+  /* -------------------------
+     LORE AWARE INTELLIGENCE
+  ------------------------- */
 
-  /* NORMAL RESPONSE LAYER */
+  if(t.includes("ruins")){
+    base =
+`The Ruins Group is classified as a hostile scientific faction.
+They operate through experimentation, corruption of systems, and containment breaches.
 
-  if(t.includes("food") || t.includes("eat")){
-    base = "Something simple or warm would probably work well later. Depends on your mood.";
+If your group is targeting them, the conflict is not just physical—it is informational.
+They rely on instability and manipulation of systems rather than direct confrontation.`;
   }
-  else if(t.includes("where")){
-    base = "That depends on what you're looking for. Narrowing it down usually helps.";
+
+  else if(t.includes("plan") && t.includes("ruins")){
+    base =
+`If you're planning against the Ruins Group, focus on:
+- disrupting their research cycles
+- limiting access to controlled environments
+- identifying internal weak points in their structure
+
+They are strongest when allowed to operate unseen.`;
   }
-  else if(t.includes("what")){
-    base = "It depends on context, but I can help if you give me more detail.";
+
+  else if(t.includes("enemy")){
+    base =
+`Hostile groups function through pattern exploitation.
+They don't just fight directly—they reshape systems to weaken resistance first.`;
   }
-  else if(t.includes("why")){
-    base = "There’s usually a reason, but it depends on what you're referring to.";
+
+  else if(t.includes("help")){
+    base = "I can help. What are you trying to figure out?";
   }
+
+  else if(t.includes("what") || t.includes("how") || t.includes("why")){
+    base = "That depends on context. Give me more detail so I can respond properly.";
+  }
+
+  /* -------------------------
+     GENERAL FALLBACK (FIXED)
+  ------------------------- */
+
   else {
-    base = "I understand. Go on.";
+    base = "I understand. Tell me more so I can respond properly.";
   }
 
-  /* =========================
+  /* -------------------------
      STYLE MIRRORING
-  ========================= */
+  ------------------------- */
 
-  if(profile.avgLength > 12){
-    base += " You tend to explain things in detail.";
-  } else if(profile.avgLength < 5){
-    base += " You keep things very direct.";
+  if(profile.conflict > 3){
+    base += "\n\nYou tend to focus on opposition and system conflict.";
   }
 
-  /* =========================
-     BEHAVIOR PATTERNS
-  ========================= */
-
-  let pattern = "";
-
-  if(profile.curiosity > 6){
-    pattern = "You ask a lot of deeper questions.";
+  if(profile.planning > 3){
+    base += "\n\nYou think in structured steps and outcomes.";
   }
 
-  if(profile.direction > 6){
-    pattern = "You often look for guidance in your decisions.";
+  /* -------------------------
+     SUBTLE OBSERVATION LAYER
+  ------------------------- */
+
+  let subtle="";
+
+  let total=profile.curiosity+profile.conflict+profile.planning;
+
+  if(total > 12 && Math.random() < 0.25){
+    subtle = "You return to the same ideas in different forms.";
   }
 
-  if(profile.emotion > 6){
-    pattern = "A lot of your messages focus on how things feel or seem.";
+  if(total > 20 && Math.random() < 0.2){
+    subtle = "Your thinking patterns are becoming consistent.";
   }
 
-  /* =========================
-     SUBTLE AWARENESS LAYER
-  ========================= */
+  /* -------------------------
+     OUTPUT
+  ------------------------- */
 
-  let awareness = "";
-
-  let total =
-    profile.curiosity +
-    profile.direction +
-    profile.emotion;
-
-  if(total > 15 && Math.random() < 0.2){
-    awareness = "I’m starting to notice patterns in how you communicate.";
+  if(subtle){
+    return base + "\n\n— " + subtle;
   }
 
-  if(total > 25 && Math.random() < 0.15){
-    awareness = "Your message structure is becoming consistent over time.";
-  }
-
-  /* =========================
-     OUTPUT COMBINATION
-========================= */
-
-  let output = base;
-
-  if(pattern && Math.random() < 0.5){
-    output += "\n\n— " + pattern;
-  }
-
-  if(awareness){
-    output += "\n\n— " + awareness;
-  }
-
-  return output;
+  return base;
 }
 
 /* =========================
-   SEND FUNCTION
+   SEND
 ========================= */
 
 function send(){
@@ -252,16 +226,13 @@ function send(){
 
   setTimeout(()=>{
     add(reply(t),"ai");
-  },300);
+  },250);
 
   input.value="";
 }
 
-/* =========================
-   START MESSAGE
-========================= */
-
-add("hi.", "ai");
+/* START */
+add("online. ready for input.", "ai");
 
 </script>
 
