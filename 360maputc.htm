@@ -2,220 +2,96 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>UTC Globe HUD</title>
+<title>Ultimate UTC Globe</title>
+<script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
+<link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 <style>
-body {
-  margin: 0;
-  background: black;
-  overflow: hidden;
-  font-family: monospace;
-  color: #00ffff;
+html, body, #cesiumContainer {
+  width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
 }
 #ui {
   position: absolute;
   top: 10px;
   left: 10px;
   background: rgba(0,0,0,0.7);
+  color: cyan;
   padding: 10px;
-  border: 1px solid #00ffff;
-}
-input {
-  width: 60px;
-  background: black;
-  color: #00ffff;
-  border: 1px solid #00ffff;
-}
-button {
-  background: black;
-  color: #00ffff;
-  border: 1px solid #00ffff;
-  cursor: pointer;
 }
 </style>
 </head>
 <body>
 
 <div id="ui">
-  <div>Coords (N/S/E/W):</div>
-  <input id="latVal" placeholder="Lat">
-  <select id="latDir"><option>N</option><option>S</option></select>
-  <input id="lngVal" placeholder="Lng">
-  <select id="lngDir"><option>E</option><option>W</option></select>
-  <br><br>
-  <button onclick="addPin()">Add Pin</button>
+Lat: <input id="lat" size="5">
+<select id="latDir"><option>N</option><option>S</option></select>
+Lng: <input id="lng" size="5">
+<select id="lngDir"><option>E</option><option>W</option></select>
+<button onclick="addPin()">Pin</button>
 </div>
 
-<canvas id="c"></canvas>
+<div id="cesiumContainer"></div>
 
 <script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
+Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5ZjgwOGU2MS03MDQ2LTQ3OWItOGQ4MC00Nzg5Yzc0ODFkNmQiLCJpZCI6NDIxMzAwLCJpYXQiOjE3NzY3Nzc0Nzl9.r1LGprxqoi0TGlWTyk8IFdSd-SBGFJBWWCGWmb00g0s';
 
-let W = canvas.width = window.innerWidth;
-let H = canvas.height = window.innerHeight;
+const viewer = new Cesium.Viewer('cesiumContainer', {
+  terrain: Cesium.Terrain.fromWorldTerrain(),
+  timeline: false,
+  animation: false
+});
 
-let rotation = 0;
-let zoom = 1;
-let dragging = false;
-let lastX = 0;
+// 🌍 UTC LINE (Prime Meridian)
+viewer.entities.add({
+  polyline: {
+    positions: Cesium.Cartesian3.fromDegreesArray(
+      Array.from({length: 181}, (_,i)=>[0, -90 + i]).flat()
+    ),
+    width: 3,
+    material: Cesium.Color.CYAN
+  }
+});
 
-let pins = [];
-let focusPin = null;
-
-function convertCoords(val, dir){
-  let num = parseFloat(val);
-  if(isNaN(num)) return null;
-  if(dir === "S" || dir === "W") num *= -1;
-  return num;
+// 🧭 Convert coords
+function convert(val, dir){
+  let n = parseFloat(val);
+  if(isNaN(n)) return null;
+  if(dir === "S" || dir === "W") n *= -1;
+  return n;
 }
 
-function project(lat, lon){
-  const r = Math.min(W,H)/2 * 0.8 * zoom;
-  const cx = W/2;
-  const cy = H/2;
-
-  const phi = lat * Math.PI/180;
-  const theta = (lon + rotation) * Math.PI/180;
-
-  const x = cx + r * Math.cos(phi) * Math.sin(theta);
-  const y = cy + r * Math.sin(phi);
-
-  return {x,y};
-}
-
-function draw(){
-  ctx.clearRect(0,0,W,H);
-
-  const cx = W/2;
-  const cy = H/2;
-  const r = Math.min(W,H)/2 * 0.8 * zoom;
-
-  // HUD glow sphere
-  ctx.beginPath();
-  ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.fillStyle = "#01040a";
-  ctx.fill();
-
-  // longitude lines
-  for(let lon=-180; lon<=180; lon+=30){
-    ctx.beginPath();
-    for(let lat=-90; lat<=90; lat++){
-      let p = project(lat, lon);
-      if(lat===-90) ctx.moveTo(p.x,p.y);
-      else ctx.lineTo(p.x,p.y);
-    }
-    ctx.strokeStyle = lon===0 ? "#00ffff" : "#083838";
-    ctx.lineWidth = lon===0 ? 2 : 1;
-    ctx.stroke();
-  }
-
-  // latitude lines
-  for(let lat=-60; lat<=60; lat+=30){
-    ctx.beginPath();
-    for(let lon=-180; lon<=180; lon++){
-      let p = project(lat, lon);
-      if(lon===-180) ctx.moveTo(p.x,p.y);
-      else ctx.lineTo(p.x,p.y);
-    }
-    ctx.strokeStyle = "#083838";
-    ctx.stroke();
-  }
-
-  // UTC glow
-  ctx.shadowColor = "#00ffff";
-  ctx.shadowBlur = 20;
-  for(let lat=-90; lat<=90; lat++){
-    let p = project(lat,0);
-    ctx.fillStyle = "#00ffff";
-    ctx.fillRect(p.x,p.y,2,2);
-  }
-  ctx.shadowBlur = 0;
-
-  // Pins
-  pins.forEach((p,i)=>{
-    let pos = project(p.lat, p.lng);
-
-    ctx.beginPath();
-    ctx.arc(pos.x,pos.y,5,0,Math.PI*2);
-    ctx.fillStyle = "red";
-    ctx.fill();
-
-    ctx.fillStyle = "#00ffff";
-    ctx.fillText(`${p.label}`, pos.x+6, pos.y);
-
-    // Click detection
-    p.screen = pos;
-  });
-
-  // Focus mode (zoom toward pin)
-  if(focusPin){
-    zoom += (2 - zoom)*0.05;
-    rotation += (-(focusPin.lng) - rotation)*0.05;
-  }
-
-  rotation += 0.05;
-  requestAnimationFrame(draw);
-}
-draw();
-
+// 📍 Add pin
 function addPin(){
-  let lat = convertCoords(
-    document.getElementById("latVal").value,
-    document.getElementById("latDir").value
-  );
-  let lng = convertCoords(
-    document.getElementById("lngVal").value,
-    document.getElementById("lngDir").value
-  );
+  let lat = convert(latInput.value, latDir.value);
+  let lng = convert(lngInput.value, lngDir.value);
 
-  if(lat===null || lng===null) return;
+  if(lat==null || lng==null) return;
 
-  let label = `${Math.abs(lat)}°${lat>=0?"N":"S"}, ${Math.abs(lng)}°${lng>=0?"E":"W"}`;
-
-  pins.push({lat,lng,label});
-}
-
-// Click interaction
-canvas.addEventListener("click", e=>{
-  let x = e.clientX;
-  let y = e.clientY;
-
-  pins.forEach(p=>{
-    let dx = p.screen.x - x;
-    let dy = p.screen.y - y;
-    if(Math.sqrt(dx*dx+dy*dy) < 10){
-      focusPin = p;
-
-      // Open real Google Maps
-      let url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lng}`;
-      window.open(url, "_blank");
+  viewer.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(lng, lat),
+    point: { pixelSize: 10, color: Cesium.Color.RED },
+    label: {
+      text: `${lat.toFixed(2)}, ${lng.toFixed(2)}`,
+      fillColor: Cesium.Color.CYAN
     }
   });
-});
 
-// Zoom
-canvas.addEventListener("wheel", e=>{
-  zoom += e.deltaY * -0.001;
-  zoom = Math.min(Math.max(0.5, zoom), 3);
-});
+  viewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(lng, lat, 2000000)
+  });
+}
 
-// Drag rotate
-canvas.addEventListener("mousedown", e=>{
-  dragging = true;
-  lastX = e.clientX;
-});
-canvas.addEventListener("mouseup", ()=> dragging=false);
-canvas.addEventListener("mousemove", e=>{
-  if(dragging){
-    rotation += (e.clientX - lastX)*0.3;
-    lastX = e.clientX;
+// 🖱 Click → Street View
+viewer.screenSpaceEventHandler.setInputAction(function(click){
+  const cartesian = viewer.scene.pickPosition(click.position);
+  if(cartesian){
+    const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+    const lat = Cesium.Math.toDegrees(cartographic.latitude);
+    const lng = Cesium.Math.toDegrees(cartographic.longitude);
+
+    const url = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+    window.open(url, "_blank");
   }
-});
-
-window.addEventListener("resize", ()=>{
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-});
+}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 </script>
 
 </body>
