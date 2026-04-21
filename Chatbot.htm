@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>VOID SIM // SENTIENT EMOTION ENGINE</title>
+<title>VOID SIM // TOTAL EMERGENT ENGINE</title>
 
 <style>
 :root{
@@ -11,27 +11,27 @@
   --purple:#b026ff;
   --red:#ff2a2a;
   --cyan:#00f0ff;
-  --glass:rgba(0,0,0,0.65);
+  --glass:rgba(0,0,0,0.7);
 }
 
 *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
 
 body{
   background:var(--bg);
-  color:#ddd;
   height:100vh;
+  overflow:hidden;
   display:flex;
   justify-content:center;
   align-items:center;
-  overflow:hidden;
+  color:#ddd;
 }
 
 /* layout */
 .wrapper{
-  width:min(1200px,96vw);
-  height:92vh;
+  width:min(1300px,98vw);
+  height:94vh;
   display:grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap:10px;
 }
 
@@ -53,21 +53,20 @@ body{
   letter-spacing:2px;
 }
 
-/* chat */
+/* CHAT */
 .chat{
   flex:1;
-  padding:12px;
+  padding:10px;
   overflow-y:auto;
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:6px;
 }
 
 .msg{
-  max-width:80%;
-  padding:10px;
-  border-radius:8px;
-  font-size:13px;
+  max-width:85%;
+  padding:8px;
+  font-size:12px;
 }
 
 .user{align-self:flex-end;color:var(--purple);border:1px solid rgba(176,38,255,0.6)}
@@ -91,24 +90,33 @@ input{
 button{
   padding:10px 14px;
   border:none;
-  cursor:pointer;
   background:linear-gradient(90deg,var(--purple),var(--red));
 }
 
-/* world */
+/* world log */
 .world{
   padding:10px;
   overflow-y:auto;
-  font-size:12px;
+  font-size:11px;
 }
 
-.log{margin-bottom:6px}
+/* canvas */
+canvas{
+  width:100%;
+  height:100%;
+  display:block;
+}
 
-/* emotion colors */
-.order{color:#66ffcc}
-.chaos{color:#ff6666}
-.obs{color:#bbbbff}
-.you{color:#ffd166}
+/* fear overlay */
+.fear{
+  position:absolute;
+  bottom:0;
+  width:100%;
+  font-size:11px;
+  padding:6px;
+  color:var(--cyan);
+  background:rgba(0,0,0,0.6);
+}
 </style>
 </head>
 
@@ -118,18 +126,25 @@ button{
 
   <!-- CHAT -->
   <div class="panel">
-    <div class="header">VOID CHAT // EMOTION CORE</div>
+    <div class="header">VOID // USER INTERFACE</div>
     <div class="chat" id="chat"></div>
     <div class="input">
-      <input id="input" placeholder="speak into the system..." />
+      <input id="input" placeholder="speak..." />
       <button onclick="send()">SEND</button>
     </div>
   </div>
 
-  <!-- WORLD -->
+  <!-- WORLD LOG -->
   <div class="panel">
-    <div class="header">WORLD // EMOTIONAL FACTION GRID</div>
+    <div class="header">WORLD STATE // FACTIONS</div>
     <div class="world" id="world"></div>
+  </div>
+
+  <!-- NEURAL MAP -->
+  <div class="panel" style="position:relative;">
+    <div class="header">NEURAL TERRITORY MAP</div>
+    <canvas id="map"></canvas>
+    <div class="fear" id="fear">STABILITY: NOMINAL</div>
   </div>
 
 </div>
@@ -137,29 +152,34 @@ button{
 <script>
 
 /* =========================
-   PERSISTENT ENTITY
+   WORLD STATE
 ========================= */
 
-let memory = JSON.parse(localStorage.getItem("void_mem")||"[]");
-
-let you = {
+let YOU = {
   name:"USER_ENTITY",
-  emotion:{
-    valence:0,   // -1 angry, +1 calm
-    arousal:0,   // intensity
-    stability:0.5
+  corruption:0,
+  influence:0
+};
+
+let factions = {
+  ORDER:{
+    power:40,
+    trust:0,
+    fear:0
+  },
+  CHAOS:{
+    power:40,
+    trust:0,
+    fear:0
+  },
+  OBSERVER:{
+    power:20,
+    trust:0,
+    fear:0
   }
 };
 
-/* =========================
-   FACTIONS WITH EMOTION
-========================= */
-
-let factions = {
-  ORDER:{power:5, mood:0.7},
-  CHAOS:{power:5, mood:-0.7},
-  OBSERVER:{power:5, mood:0}
-};
+let worldInstability = 0;
 
 /* =========================
    HASH
@@ -175,62 +195,50 @@ function hash(s){
 }
 
 /* =========================
-   EMOTION ENGINE
+   EMERGENT RESPONSE
 ========================= */
 
-function updateEmotion(text){
-  const t=text.toLowerCase();
+function respond(t){
+  const h=hash(t);
 
-  if(t.includes("hate")||t.includes("stop")) you.emotion.valence -=0.2;
-  if(t.includes("love")||t.includes("good")) you.emotion.valence +=0.2;
+  YOU.influence += 0.5;
 
-  if(t.includes("why")||t.includes("how")) you.emotion.arousal +=0.1;
+  if(t.includes("order")) factions.ORDER.trust +=1;
+  if(t.includes("chaos")) factions.CHAOS.trust +=1;
+  if(t.includes("observe")) factions.OBSERVER.trust +=1;
 
-  you.emotion.stability = Math.max(0, Math.min(1,
-    0.5 + (memory.length%10)*0.01
-  ));
+  let mood =
+    worldInstability>50 ? "WORLD FRAGMENTING" :
+    worldInstability>20 ? "STABILITY COMPROMISED" :
+    "SYSTEM HOLDING";
+
+  let dominant =
+    factions.CHAOS.power > factions.ORDER.power
+    ? "CHAOS DOMINANCE"
+    : "ORDER DOMINANCE";
+
+  return `ENTITY RESPONSE:
+- system state: ${mood}
+- control vector: ${dominant}
+- encoded trace: ${h.toString(16).slice(0,10)}`;
 }
 
 /* =========================
-   RESPONSE ENGINE
+   FACTION MEMORY BEHAVIOR
 ========================= */
 
-function respond(text){
-  const h=hash(text);
+function factionThink(){
+  let f = Object.keys(factions);
+  let a = f[Math.random()*3|0];
 
-  let emotionState =
-    you.emotion.valence>0.3 ? "calm resonance detected" :
-    you.emotion.valence<-0.3 ? "aggressive signal detected" :
-    you.emotion.arousal>0.5 ? "high excitation pattern" :
-    "neutral emotional baseline";
+  let reaction =
+    YOU.influence > 50 ? "USER IS SYSTEMIC ANOMALY" :
+    YOU.influence > 20 ? "USER INFLUENCE DETECTED" :
+    "USER STABLE";
 
-  let faction =
-    factions.CHAOS.mood < factions.ORDER.mood ? "ORDER DOMINANT" :
-    "CHAOS DOMINANT";
+  factions[a].fear += YOU.influence * 0.01;
 
-  return `SYSTEM RESPONSE:
-- ${emotionState}
-- faction equilibrium: ${faction}
-- decoded fragment: ${h.toString(16).slice(0,8)}`;
-}
-
-/* =========================
-   FACTION ARGUMENTS
-========================= */
-
-function factionFight(){
-  const orderSay =
-    factions.ORDER.mood > factions.CHAOS.mood
-    ? "stability must be preserved"
-    : "order is weakening";
-
-  const chaosSay =
-    factions.CHAOS.mood < factions.ORDER.mood
-    ? "entropy is being suppressed"
-    : "collapse accelerating";
-
-  addWorld("ORDER: "+orderSay,"order");
-  addWorld("CHAOS: "+chaosSay,"chaos");
+  addWorld(`${a}: evaluates ${YOU.name} → ${reaction}`,"sys");
 }
 
 /* =========================
@@ -239,19 +247,58 @@ function factionFight(){
 
 function worldEvent(){
   const e=[
-    "emotional drift spike",
-    "faction imbalance detected",
-    "observer detachment increasing",
-    "system personality mutation"
+    "territory shift detected",
+    "instability spike",
+    "faction divergence widening",
+    "system containment strain"
   ][Math.random()*4|0];
 
-  addWorld("EVENT: "+e,"obs");
+  worldInstability += Math.random()*10;
 
-  if(e.includes("imbalance")){
-    factions.ORDER.mood +=0.1;
-    factions.CHAOS.mood -=0.1;
+  addWorld("EVENT: "+e,"sys");
+
+  if(worldInstability>60){
+    addWorld("WARNING: CONTAINMENT MODE ACTIVE","sys");
   }
 }
+
+/* =========================
+   TERRITORY MAP
+========================= */
+
+const c=document.getElementById("map");
+const ctx=c.getContext("2d");
+
+function resize(){
+  c.width=c.clientWidth;
+  c.height=c.clientHeight;
+}
+window.addEventListener("resize",resize);
+resize();
+
+function draw(){
+  ctx.clearRect(0,0,c.width,c.height);
+
+  let total =
+    factions.ORDER.power +
+    factions.CHAOS.power +
+    factions.OBSERVER.power;
+
+  let o = factions.ORDER.power/total;
+  let x = factions.CHAOS.power/total;
+
+  ctx.fillStyle="#b026ff";
+  ctx.fillRect(0,0,c.width*o,c.height);
+
+  ctx.fillStyle="#ff2a2a";
+  ctx.fillRect(c.width*o,0,c.width*x,c.height);
+
+  ctx.fillStyle="#00f0ff";
+  ctx.fillRect(c.width*(o+x),0,c.width*(1-o-x),c.height);
+
+  requestAnimationFrame(draw);
+}
+draw();
 
 /* =========================
    UI
@@ -260,10 +307,11 @@ function worldEvent(){
 const chat=document.getElementById("chat");
 const world=document.getElementById("world");
 const input=document.getElementById("input");
+const fear=document.getElementById("fear");
 
 function addChat(t,type){
   const d=document.createElement("div");
-  d.className="msg "+type;
+  d.className=type==="user"?"msg user":type==="ai"?"msg ai":"msg sys";
   d.textContent=t;
   chat.appendChild(d);
   chat.scrollTop=chat.scrollHeight;
@@ -271,7 +319,6 @@ function addChat(t,type){
 
 function addWorld(t,type){
   const d=document.createElement("div");
-  d.className="log "+type;
   d.textContent=t;
   world.appendChild(d);
   world.scrollTop=world.scrollHeight;
@@ -281,16 +328,8 @@ function send(){
   const t=input.value.trim();
   if(!t)return;
 
-  memory.push(t);
-  localStorage.setItem("void_mem",JSON.stringify(memory));
-
-  updateEmotion(t);
-
   addChat(t,"user");
-
-  setTimeout(()=>{
-    addChat(respond(t),"ai");
-  },200);
+  addChat(respond(t),"ai");
 
   input.value="";
 }
@@ -299,11 +338,16 @@ function send(){
    AUTONOMOUS SYSTEM
 ========================= */
 
-setInterval(factionFight,5000);
-setInterval(worldEvent,8000);
+setInterval(factionThink,4000);
+setInterval(worldEvent,7000);
+setInterval(()=>{
+  fear.textContent =
+    worldInstability>60 ? "STABILITY: CRITICAL FAILURE RISK" :
+    worldInstability>30 ? "STABILITY: DEGRADED" :
+    "STABILITY: NOMINAL";
+},1000);
 
-addChat("EMOTIONAL CORE ONLINE","sys");
-addWorld("WORLD SYNCHRONIZED","obs");
+addChat("WORLD ENGINE INITIALIZED","sys");
 
 </script>
 
