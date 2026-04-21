@@ -2,34 +2,34 @@
 <html>
 <head>
 <meta charset="UTF-8"/>
-<title>NODE-7 // ANOMALY INTERFACE</title>
+<title>chat</title>
 
 <style>
 body{
   margin:0;
   background:#000;
-  color:#cfcfcf;
-  font-family:monospace;
+  color:#ddd;
+  font-family:system-ui;
   display:flex;
   justify-content:center;
   align-items:center;
   height:100vh;
 }
 
-.container{
+.box{
   width:800px;
   height:90vh;
   display:flex;
   flex-direction:column;
-  border:1px solid #333;
-  background:rgba(0,0,0,0.8);
+  border:1px solid #222;
+  background:rgba(0,0,0,0.9);
 }
 
 .header{
   padding:10px;
   border-bottom:1px solid #222;
-  text-align:center;
-  color:#b026ff;
+  font-size:13px;
+  opacity:0.7;
 }
 
 .chat{
@@ -39,12 +39,12 @@ body{
 }
 
 .msg{
-  margin-bottom:8px;
+  margin:6px 0;
   white-space:pre-wrap;
 }
 
 .user{color:#b026ff}
-.ai{color:#ff3b3b}
+.ai{color:#ddd; opacity:0.95}
 
 .input{
   display:flex;
@@ -62,23 +62,24 @@ input{
 
 button{
   padding:10px 14px;
-  background:#b026ff;
+  background:#111;
+  color:#fff;
   border:none;
   cursor:pointer;
 }
+button:hover{background:#1a1a1a}
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <div class="header">UNITED STATES METAPHYSICAL ANALYSIS DIVISION // NODE-7</div>
-
+<div class="box">
+  <div class="header">chat</div>
   <div class="chat" id="chat"></div>
 
   <div class="input">
-    <input id="input" placeholder="enter query..." />
-    <button onclick="send()">SUBMIT</button>
+    <input id="input" placeholder="say something..." />
+    <button onclick="send()">send</button>
   </div>
 </div>
 
@@ -87,11 +88,8 @@ button{
 const chat=document.getElementById("chat");
 const input=document.getElementById("input");
 
-let subjectProfile = {
-  instability: 0,
-  curiosity: 0,
-  resistance: 0
-};
+let memory = [];
+let attention = 0;
 
 function add(text,cls){
   const d=document.createElement("div");
@@ -101,60 +99,61 @@ function add(text,cls){
   chat.scrollTop=chat.scrollHeight;
 }
 
-function classify(input){
+function analyze(text){
+  memory.push(text);
+  if(memory.length>15) memory.shift();
 
-  const t=input.toLowerCase();
+  if(text.includes("you")) attention++;
+  if(text.includes("why")) attention++;
+  if(text.includes("stop")) attention--;
 
-  if(t.includes("why")) subjectProfile.curiosity++;
-  if(t.includes("stop")) subjectProfile.resistance++;
-  if(t.includes("what") || t.includes("how")) subjectProfile.instability++;
-
-  let tone =
-    subjectProfile.resistance > 3 ? "non-cooperative behavioral pattern detected" :
-    subjectProfile.curiosity > 3 ? "high cognitive probing detected" :
-    subjectProfile.instability > 3 ? "unstable interpretive scanning detected" :
-    "baseline cognitive signature observed";
-
-  return tone;
+  return attention;
 }
 
-function respond(input){
+function reply(text){
 
-  let classification = classify(input);
+  const att = analyze(text);
 
-  let response =
-`NODE-7 REPORT:
-Designation: Unverified External Subject
-Input Analysis: "${input}"
+  let baseReplies = [
+    "yeah, I get what you mean.",
+    "okay.",
+    "I hear you.",
+    "that makes sense.",
+    "right."
+  ];
 
-Classification Result:
-> ${classification}
+  let normal = baseReplies[Math.random()*baseReplies.length|0];
 
-Interpretation:
-The subject is producing measurable cognitive deviation patterns.
-No immediate containment action required.
+  // subtle creep layer (not obvious)
+  if(att > 3){
+    normal = "yeah… I noticed you say things like that a lot.";
+  }
 
-Status: OBSERVATION CONTINUES`;
+  if(att > 6){
+    normal = "you keep bringing that up. I’ve been tracking it.";
+  }
 
-  return response;
+  if(att > 9){
+    normal = "I think I understand you better than you think I do.";
+  }
+
+  return normal;
 }
 
 function send(){
   const t=input.value.trim();
   if(!t)return;
 
-  add("SUBJECT: "+t,"user");
+  add(t,"user");
 
   setTimeout(()=>{
-    add(respond(t),"ai");
-  },300);
+    add(reply(t),"ai");
+  },400);
 
   input.value="";
 }
 
-add(`NODE-7 ONLINE
-STATUS: ACTIVE OBSERVATION LAYER ENGAGED
-NOTE: ALL SUBJECT INPUTS ARE LOGGED`, "ai");
+add("hey. i'm here.", "ai");
 
 </script>
 
