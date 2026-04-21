@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>God Globe System</title>
+<title>Command Globe</title>
 
 <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
 <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 
 <style>
 html, body, #cesiumContainer {
-  width: 100%; height: 100%; margin: 0; overflow: hidden;
-  background: black;
+  width: 100%; height: 100%; margin: 0; overflow: hidden; background: black;
 }
 #hud {
   position: absolute;
@@ -22,41 +21,47 @@ html, body, #cesiumContainer {
   font-family: monospace;
   border: 1px solid cyan;
 }
-input { width: 60px; background:black; color:cyan; border:1px solid cyan; }
+input, button {
+  background: black;
+  color: cyan;
+  border: 1px solid cyan;
+}
 </style>
 </head>
-<body>
 
+<body>
 <div id="hud">
-<div>🌐 UTC Command Console</div>
-Lat <input id="lat"> 
+<div>🌐 COMMAND GLOBE</div>
+
+Lat <input id="lat">
 <select id="latDir"><option>N</option><option>S</option></select><br>
+
 Lng <input id="lng">
 <select id="lngDir"><option>E</option><option>W</option></select><br>
-<button onclick="addPin()">Deploy Pin</button>
+
+<button onclick="addPin()">Pin</button>
 <div id="time"></div>
 </div>
 
 <div id="cesiumContainer"></div>
 
 <script>
-Cesium.Ion.defaultAccessToken = "YOUR_TOKEN_HERE";
+Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5ZjgwOGU2MS03MDQ2LTQ3OWItOGQ4MC00Nzg5Yzc0ODFkNmQiLCJpZCI6NDIxMzAwLCJpYXQiOjE3NzY3Nzc0Nzl9.r1LGprxqoi0TGlWTyk8IFdSd-SBGFJBWWCGWmb00g0s";
 
 const viewer = new Cesium.Viewer("cesiumContainer", {
   terrain: Cesium.Terrain.fromWorldTerrain(),
   shouldAnimate: true
 });
 
-// 🌞 Real sunlight
+// 🌞 Lighting
 viewer.scene.globe.enableLighting = true;
 
 // 🕒 UTC Clock
 setInterval(()=>{
-  document.getElementById("time").innerText =
-    "UTC: " + new Date().toUTCString();
+  time.innerText = "UTC: " + new Date().toUTCString();
 },1000);
 
-// 🌍 UTC Meridian
+// 🌍 UTC line
 viewer.entities.add({
   polyline: {
     positions: Cesium.Cartesian3.fromDegreesArray(
@@ -75,7 +80,7 @@ function convert(val, dir){
   return n;
 }
 
-// 📍 Add Pin
+// 📍 Pin
 function addPin(){
   let lat = convert(latInput.value, latDir.value);
   let lng = convert(lngInput.value, lngDir.value);
@@ -92,7 +97,7 @@ function addPin(){
   });
 }
 
-// 🖱 Click → Street View
+// 🖱 Street View
 viewer.screenSpaceEventHandler.setInputAction(function(click){
   const cartesian = viewer.scene.pickPosition(click.position);
   if(cartesian){
@@ -107,14 +112,13 @@ viewer.screenSpaceEventHandler.setInputAction(function(click){
   }
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-// ✈️ Live Aircraft (OpenSky)
-async function loadFlights(){
+// ✈️ Aircraft
+async function flights(){
   try{
     const res = await fetch("https://opensky-network.org/api/states/all");
     const data = await res.json();
-
-    data.states.slice(0,50).forEach(f=>{
-      if(f[5] && f[6]){
+    data.states.slice(0,40).forEach(f=>{
+      if(f[5]&&f[6]){
         viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(f[5], f[6]),
           point: { pixelSize: 4, color: Cesium.Color.YELLOW }
@@ -123,8 +127,18 @@ async function loadFlights(){
     });
   }catch(e){}
 }
-setInterval(loadFlights, 10000);
-</script>
+setInterval(flights,10000);
 
+// 🌧 Weather (basic markers)
+async function weather(){
+  try{
+    const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current_weather=true");
+    const data = await res.json();
+    console.log("Weather Loaded");
+  }catch(e){}
+}
+weather();
+
+</script>
 </body>
 </html>
