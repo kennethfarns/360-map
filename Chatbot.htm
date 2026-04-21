@@ -1,53 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>VOID SIM // WORLD GAME ENGINE</title>
+<title>NODE-7 // ANOMALY INTERFACE</title>
 
 <style>
-:root{
-  --bg:#000;
-  --purple:#b026ff;
-  --red:#ff2a2a;
-  --cyan:#00f0ff;
-  --glass:rgba(0,0,0,0.7);
-}
-
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
-
 body{
-  background:var(--bg);
-  color:#ddd;
-  height:100vh;
+  margin:0;
+  background:#000;
+  color:#cfcfcf;
+  font-family:monospace;
   display:flex;
   justify-content:center;
   align-items:center;
-  overflow:hidden;
+  height:100vh;
 }
 
-.wrapper{
-  width:min(1300px,98vw);
-  height:94vh;
-  display:grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap:10px;
-}
-
-.panel{
-  background:var(--glass);
-  backdrop-filter:blur(18px);
-  border:1px solid rgba(176,38,255,0.4);
+.container{
+  width:800px;
+  height:90vh;
   display:flex;
   flex-direction:column;
-  overflow:hidden;
+  border:1px solid #333;
+  background:rgba(0,0,0,0.8);
 }
 
 .header{
   padding:10px;
+  border-bottom:1px solid #222;
   text-align:center;
-  color:var(--purple);
-  border-bottom:1px solid rgba(255,255,255,0.1);
+  color:#b026ff;
 }
 
 .chat{
@@ -57,17 +39,16 @@ body{
 }
 
 .msg{
-  margin-bottom:6px;
-  font-size:12px;
+  margin-bottom:8px;
+  white-space:pre-wrap;
 }
 
-.user{color:var(--purple)}
-.ai{color:var(--red)}
-.sys{color:var(--cyan)}
+.user{color:#b026ff}
+.ai{color:#ff3b3b}
 
 .input{
   display:flex;
-  border-top:1px solid rgba(255,255,255,0.1);
+  border-top:1px solid #222;
 }
 
 input{
@@ -76,218 +57,104 @@ input{
   background:black;
   border:none;
   color:white;
+  outline:none;
 }
 
 button{
-  padding:10px;
+  padding:10px 14px;
+  background:#b026ff;
   border:none;
-  background:linear-gradient(90deg,var(--purple),var(--red));
-}
-
-.world{
-  padding:10px;
-  overflow-y:auto;
-  font-size:12px;
-}
-
-/* STATUS BAR */
-.status{
-  padding:8px;
-  font-size:11px;
-  color:var(--cyan);
-  border-top:1px solid rgba(255,255,255,0.1);
+  cursor:pointer;
 }
 </style>
 </head>
 
 <body>
 
-<div class="wrapper">
+<div class="container">
+  <div class="header">UNITED STATES METAPHYSICAL ANALYSIS DIVISION // NODE-7</div>
 
-<!-- CHAT -->
-<div class="panel">
-  <div class="header">VOID GAME // PLAYER INTERFACE</div>
   <div class="chat" id="chat"></div>
+
   <div class="input">
-    <input id="input" placeholder="say something..." />
-    <button onclick="send()">SEND</button>
+    <input id="input" placeholder="enter query..." />
+    <button onclick="send()">SUBMIT</button>
   </div>
-</div>
-
-<!-- WORLD -->
-<div class="panel">
-  <div class="header">WORLD STATE</div>
-  <div class="world" id="world"></div>
-</div>
-
-<!-- STATUS -->
-<div class="panel">
-  <div class="header">GAME STATUS</div>
-  <div class="chat" id="status"></div>
-</div>
-
 </div>
 
 <script>
 
-/* =========================
-   GAME STATE
-========================= */
-
-let world = {
-  order: 40,
-  chaos: 40,
-  instability: 20,
-  turns:0
-};
-
-/* multiplayer simulation */
-let echoes = [
-  "unknown user stabilized a sector",
-  "external anomaly increased chaos",
-  "remote system reduced instability"
-];
-
-/* =========================
-   HUMAN READABLE ENGINE
-========================= */
-
-function explainState(){
-  if(world.instability > 70){
-    return "The world is close to collapse. Chaos is too strong.";
-  }
-  if(world.order > world.chaos){
-    return "Order is currently in control. The system is stable.";
-  }
-  if(world.chaos > world.order){
-    return "Chaos is taking over. The system is becoming unpredictable.";
-  }
-  return "The system is balanced but fragile.";
-}
-
-/* =========================
-   GAME LOGIC
-========================= */
-
-function update(input){
-
-  world.turns++;
-
-  if(input.includes("order")){
-    world.order += 5;
-    world.chaos -= 2;
-  }
-
-  if(input.includes("chaos")){
-    world.chaos += 5;
-    world.order -= 2;
-  }
-
-  if(input.includes("help")){
-    world.order += 2;
-  }
-
-  world.instability = Math.abs(world.chaos - world.order);
-
-  // multiplayer echo
-  if(Math.random() < 0.3){
-    let e = echoes[Math.random()*echoes.length|0];
-    world.chaos += 2;
-    addWorld("REMOTE EVENT: " + e);
-  }
-
-  checkEndings();
-}
-
-/* =========================
-   ENDINGS
-========================= */
-
-function checkEndings(){
-
-  if(world.instability > 80){
-    addStatus("END: TOTAL COLLAPSE - The system failed completely.");
-    return;
-  }
-
-  if(world.order > 80){
-    addStatus("END: CONTROLLED REALITY - Order fully dominates.");
-    return;
-  }
-
-  if(world.chaos > 80){
-    addStatus("END: CHAOS ASCENSION - The system became unpredictable but alive.");
-    return;
-  }
-}
-
-/* =========================
-   UI
-========================= */
-
 const chat=document.getElementById("chat");
-const worldBox=document.getElementById("world");
-const status=document.getElementById("status");
 const input=document.getElementById("input");
 
-function addChat(t,c){
+let subjectProfile = {
+  instability: 0,
+  curiosity: 0,
+  resistance: 0
+};
+
+function add(text,cls){
   const d=document.createElement("div");
-  d.className="msg "+c;
-  d.textContent=t;
+  d.className="msg "+cls;
+  d.textContent=text;
   chat.appendChild(d);
   chat.scrollTop=chat.scrollHeight;
 }
 
-function addWorld(t){
-  const d=document.createElement("div");
-  d.className="msg sys";
-  d.textContent=t;
-  worldBox.appendChild(d);
-  worldBox.scrollTop=worldBox.scrollHeight;
-}
+function classify(input){
 
-function addStatus(t){
-  const d=document.createElement("div");
-  d.className="msg sys";
-  d.textContent=t;
-  status.appendChild(d);
-}
+  const t=input.toLowerCase();
 
-/* =========================
-   PLAYER RESPONSE
-========================= */
+  if(t.includes("why")) subjectProfile.curiosity++;
+  if(t.includes("stop")) subjectProfile.resistance++;
+  if(t.includes("what") || t.includes("how")) subjectProfile.instability++;
+
+  let tone =
+    subjectProfile.resistance > 3 ? "non-cooperative behavioral pattern detected" :
+    subjectProfile.curiosity > 3 ? "high cognitive probing detected" :
+    subjectProfile.instability > 3 ? "unstable interpretive scanning detected" :
+    "baseline cognitive signature observed";
+
+  return tone;
+}
 
 function respond(input){
-  let explanation = explainState();
 
-  return `Here is what is happening:
-- ${explanation}
-- Order level: ${world.order}
-- Chaos level: ${world.chaos}
-- Instability: ${world.instability}
+  let classification = classify(input);
 
-Your input changed the system state.`;
+  let response =
+`NODE-7 REPORT:
+Designation: Unverified External Subject
+Input Analysis: "${input}"
+
+Classification Result:
+> ${classification}
+
+Interpretation:
+The subject is producing measurable cognitive deviation patterns.
+No immediate containment action required.
+
+Status: OBSERVATION CONTINUES`;
+
+  return response;
 }
 
-/* =========================
-   SEND
-========================= */
-
 function send(){
-  let t=input.value.trim();
+  const t=input.value.trim();
   if(!t)return;
 
-  addChat(t,"user");
+  add("SUBJECT: "+t,"user");
 
-  update(t);
-
-  addChat(respond(t),"ai");
+  setTimeout(()=>{
+    add(respond(t),"ai");
+  },300);
 
   input.value="";
 }
 
-/* boot */
-addChat("You are now inside a system simulation. Your words change the world.","sys");
+add(`NODE-7 ONLINE
+STATUS: ACTIVE OBSERVATION LAYER ENGAGED
+NOTE: ALL SUBJECT INPUTS ARE LOGGED`, "ai");
 
 </script>
 
