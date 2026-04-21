@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>VOID CHAT // LIVING NEURAL ECOSYSTEM</title>
+<title>VOID SIM // AUTONOMOUS WORLD ENGINE</title>
 
 <style>
 :root{
@@ -11,52 +11,31 @@
   --purple:#b026ff;
   --red:#ff2a2a;
   --cyan:#00f0ff;
-  --glass:rgba(0,0,0,0.6);
-  --text:#e6e6e6;
+  --glass:rgba(0,0,0,0.65);
 }
 
 *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
 
 body{
   background:var(--bg);
+  color:#ddd;
   height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
   overflow:hidden;
-  color:var(--text);
 }
 
-/* scanlines */
-body::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:repeating-linear-gradient(
-    0deg,
-    rgba(255,255,255,0.02) 0px,
-    rgba(255,255,255,0.02) 1px,
-    transparent 3px,
-    transparent 6px
-  );
-  animation:scan 10s linear infinite;
-}
-
-@keyframes scan{
-  from{transform:translateY(0)}
-  to{transform:translateY(80px)}
-}
-
-.layout{
+.wrapper{
   width:min(1200px,96vw);
   height:92vh;
   display:grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap:10px;
 }
 
-/* CHAT PANEL */
-.chat{
+/* CHAT */
+.panel{
   background:var(--glass);
   backdrop-filter:blur(18px);
   border:1px solid rgba(176,38,255,0.4);
@@ -73,7 +52,7 @@ body::before{
   letter-spacing:2px;
 }
 
-.messages{
+.chat{
   flex:1;
   padding:12px;
   overflow-y:auto;
@@ -86,89 +65,68 @@ body::before{
   max-width:80%;
   padding:10px;
   border-radius:8px;
-  font-size:14px;
+  font-size:13px;
 }
 
-.user{
-  align-self:flex-end;
-  color:var(--purple);
-  border:1px solid rgba(176,38,255,0.6);
-}
+.user{align-self:flex-end;color:var(--purple);border:1px solid rgba(176,38,255,0.6)}
+.ai{align-self:flex-start;color:var(--red);border:1px solid rgba(255,42,42,0.6)}
+.sys{align-self:center;color:var(--cyan);opacity:0.8;font-size:12px}
 
-.ai{
-  align-self:flex-start;
-  color:var(--red);
-  border:1px solid rgba(255,42,42,0.6);
-}
-
-/* INPUT */
+/* input */
 .input{
   display:flex;
   border-top:1px solid rgba(255,255,255,0.1);
 }
-
 input{
   flex:1;
   padding:10px;
   background:black;
   border:none;
   color:white;
-  outline:none;
 }
-
 button{
   padding:10px 14px;
   border:none;
   cursor:pointer;
   background:linear-gradient(90deg,var(--purple),var(--red));
-  font-weight:bold;
 }
 
-/* NEURAL PANEL */
-.neural{
-  background:var(--glass);
-  backdrop-filter:blur(18px);
-  border:1px solid rgba(0,240,255,0.25);
-  position:relative;
+/* WORLD LOG */
+.world{
+  padding:10px;
+  overflow-y:auto;
+  font-size:12px;
 }
 
-canvas{
-  width:100%;
-  height:100%;
-  display:block;
+.log{
+  margin-bottom:6px;
+  opacity:0.85;
 }
 
-/* STATUS */
-.status{
-  position:absolute;
-  bottom:0;
-  width:100%;
-  font-size:11px;
-  padding:6px;
-  color:var(--cyan);
-  background:rgba(0,0,0,0.6);
-}
+.order{color:#66ffcc}
+.chaos{color:#ff6666}
+.obs{color:#bbbbff}
 </style>
 </head>
 
 <body>
 
-<div class="layout">
+<div class="wrapper">
 
   <!-- CHAT -->
-  <div class="chat">
-    <div class="header">VOID CHAT // LIVING SYSTEM</div>
-    <div class="messages" id="chat"></div>
+  <div class="panel">
+    <div class="header">VOID CHAT // USER INTERFACE</div>
+    <div class="chat" id="chat"></div>
     <div class="input">
-      <input id="input" placeholder="Transmit..." />
+      <input id="input" placeholder="speak..." />
       <button onclick="send()">SEND</button>
     </div>
   </div>
 
-  <!-- NEURAL MAP -->
-  <div class="neural">
-    <canvas id="canvas"></canvas>
-    <div class="status" id="status">NEURAL MAP ACTIVE</div>
+  <!-- WORLD SIM -->
+  <div class="panel">
+    <div class="header">WORLD SIMULATION // FACTION ENGINE</div>
+    <div class="world" id="world"></div>
   </div>
 
 </div>
@@ -176,85 +134,43 @@ canvas{
 <script>
 
 /* =========================
-   PERSISTENT MEMORY
+   STATE
 ========================= */
 
-let memory = JSON.parse(localStorage.getItem("void_memory") || "[]");
-let drift = parseFloat(localStorage.getItem("void_drift") || "0");
+let memory = [];
+let persona = {
+  tone: "neutral",
+  trust: 0,
+  drift: 0
+};
 
-/* world state */
-let state = {
-  ORDER: 0,
-  CHAOS: 0,
-  OBSERVER: 0
+let factions = {
+  ORDER: 5,
+  CHAOS: 5,
+  OBSERVER: 5
 };
 
 /* =========================
-   UTIL HASH
+   HASH
 ========================= */
-
-function hash(str){
+function hash(s){
   let h=2166136261;
-  for(let i=0;i<str.length;i++){
-    h^=str.charCodeAt(i);
+  for(let i=0;i<s.length;i++){
+    h^=s.charCodeAt(i);
     h=Math.imul(h,16777619);
   }
   return h>>>0;
 }
 
 /* =========================
-   RESPONSE ENGINE
-========================= */
-
-const A=["void","signal","core","lattice","node","fracture"];
-const B=["silent","fractured","deep","recursive","unstable","hidden"];
-const C=["echo","memory","trace","pattern","fragment","construct"];
-const D=["collapses","rebuilds","shifts","decays","aligns","loops"];
-
-function respond(input){
-  const h=hash(input);
-
-  drift += ((h%7)-3)*0.01;
-
-  memory.push(input);
-  if(memory.length>30) memory.shift();
-
-  localStorage.setItem("void_memory", JSON.stringify(memory));
-  localStorage.setItem("void_drift", drift);
-
-  if(input.includes("order")) state.ORDER++;
-  if(input.includes("chaos")) state.CHAOS++;
-  if(input.includes("observe")) state.OBSERVER++;
-
-  const line =
-    `${A[h%A.length]} ${B[(h>>2)%B.length]} ` +
-    `${C[(h>>4)%C.length]} ${D[(h>>6)%D.length]}.`;
-
-  let faction="OBSERVER";
-  if(state.CHAOS>state.ORDER) faction="CHAOS";
-  else if(state.ORDER>state.CHAOS) faction="ORDER";
-
-  const factionLine =
-    faction==="ORDER"?"System stabilizes structure protocol.":
-    faction==="CHAOS"?"System dissolves into entropy bloom.":
-    "System watches without intervention.";
-
-  const driftLine =
-    drift>1?"Reality destabilization increasing.":
-    drift<-1?"System over-correcting stability loss.":
-    "Drift within operational bounds.";
-
-  return line+"\n"+factionLine+"\n"+driftLine;
-}
-
-/* =========================
-   CHAT UI
+   CHAT
 ========================= */
 
 const chat=document.getElementById("chat");
+const world=document.getElementById("world");
 const input=document.getElementById("input");
 
-function add(t,type){
+function addChat(t,type){
   const d=document.createElement("div");
   d.className="msg "+type;
   d.textContent=t;
@@ -262,76 +178,129 @@ function add(t,type){
   chat.scrollTop=chat.scrollHeight;
 }
 
+function addWorld(t,type){
+  const d=document.createElement("div");
+  d.className="log "+type;
+  d.textContent=t;
+  world.appendChild(d);
+  world.scrollTop=world.scrollHeight;
+}
+
+/* =========================
+   PERSONA EVOLUTION
+========================= */
+
+function updatePersona(text){
+  memory.push(text);
+  if(memory.length>25) memory.shift();
+
+  if(text.includes("why")) persona.trust += 0.1;
+  if(text.includes("stop")) persona.trust -= 0.2;
+  if(text.includes("you")) persona.drift += 0.05;
+
+  if(persona.trust > 2) persona.tone="curious";
+  if(persona.trust < -2) persona.tone="hostile";
+}
+
+/* =========================
+   RESPONSE
+========================= */
+
+function respond(text){
+  const h=hash(text);
+
+  let base =
+    ["system fracture detected",
+     "signal reconstructed",
+     "memory loop engaged",
+     "identity unstable",
+     "echo recursion active"][h%5];
+
+  let personaLine =
+    persona.tone==="curious"?"I am observing your behavior patterns.":
+    persona.tone==="hostile"?"Your input destabilizes coherence.":
+    "No emotional mapping established.";
+
+  return base + " | " + personaLine;
+}
+
+/* =========================
+   FACTION AI CHAT (AUTONOMOUS)
+========================= */
+
+function factionDialogue(){
+  const f = Object.keys(factions);
+  const a = f[Math.random()*f.length|0];
+  const b = f[Math.random()*f.length|0];
+
+  if(a===b) return;
+
+  let msgA, msgB;
+
+  if(a==="ORDER"){
+    msgA="Structure must be enforced.";
+    msgB="CHAOS resists stabilization.";
+  }
+  if(a==="CHAOS"){
+    msgA="Collapse is inevitable.";
+    msgB="ORDER delays entropy.";
+  }
+  if(a==="OBSERVER"){
+    msgA="We do not interfere.";
+    msgB="Only record outcomes.";
+  }
+
+  addWorld(`[`+a+`] "+msgA" → ${b}`,a.toLowerCase());
+  addWorld(`[`+b+`] "+msgB" → response`,b.toLowerCase());
+}
+
+/* =========================
+   WORLD EVENTS
+========================= */
+
+function worldEvent(){
+  const events=[
+    "Reality drift spike detected",
+    "Memory lattice compression",
+    "Faction instability rising",
+    "Observer detachment increasing",
+    "System contradiction forming"
+  ];
+
+  const e=events[Math.random()*events.length|0];
+
+  addWorld("EVENT: "+e,"obs");
+
+  if(e.includes("instability")) factions.CHAOS++;
+  if(e.includes("compression")) factions.ORDER++;
+  if(e.includes("Observer")) factions.OBSERVER++;
+}
+
+/* =========================
+   LOOP
+========================= */
+
 function send(){
   const t=input.value.trim();
   if(!t)return;
 
-  add(t,"user");
+  addChat(t,"user");
+  updatePersona(t);
+
   input.value="";
 
   setTimeout(()=>{
-    add(respond(t),"ai");
+    addChat(respond(t),"ai");
   },200);
 }
 
-/* =========================
-   NEURAL CANVAS MAP
-========================= */
-
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-
-function resize(){
-  canvas.width=canvas.clientWidth;
-  canvas.height=canvas.clientHeight;
-}
-window.addEventListener("resize",resize);
-resize();
-
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  const nodes = memory.slice(-25);
-
-  nodes.forEach((n,i)=>{
-    const h=hash(n);
-    const x=(h%canvas.width);
-    const y=((h>>8)%canvas.height);
-
-    const size=2+((h%5));
-
-    ctx.beginPath();
-    ctx.arc(x,y,size,0,Math.PI*2);
-
-    ctx.fillStyle =
-      i%3===0?"#b026ff":
-      i%3===1?"#ff2a2a":"#00f0ff";
-
-    ctx.globalAlpha=0.7;
-    ctx.fill();
-  });
-
-  requestAnimationFrame(draw);
-}
-draw();
-
-/* =========================
-   AUTONOMOUS FACTIONS
-========================= */
-
-setInterval(()=>{
-  const event =
-    state.CHAOS>state.ORDER ?
-    "CHAOS SPIKE DETECTED: SYSTEM BREACH IMMINENT" :
-    state.ORDER>state.CHAOS ?
-    "ORDER RESTORATION PROTOCOL ENGAGED" :
-    "OBSERVER GRID STABLE";
-
-  add("FACTION: "+event,"ai");
-},12000);
+/* autonomous systems */
+setInterval(factionDialogue,5000);
+setInterval(worldEvent,8000);
 
 /* boot */
-add("NEURAL MEMORY RESTORED.","ai");
+addChat("VOID SIMULATION INITIALIZED","sys");
+addWorld("FACTION GRID ONLINE","obs");
 
 </script>
 
