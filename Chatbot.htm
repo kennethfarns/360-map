@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>chat</title>
+<title>VOID MIRROR AI</title>
 
 <style>
 body{
@@ -16,20 +16,22 @@ body{
   height:100vh;
 }
 
-.box{
-  width:800px;
+.container{
+  width:850px;
   height:90vh;
   display:flex;
   flex-direction:column;
   border:1px solid #222;
-  background:rgba(0,0,0,0.9);
+  background:rgba(0,0,0,0.92);
 }
 
 .header{
   padding:10px;
+  font-size:12px;
+  text-align:center;
+  color:#b026ff;
   border-bottom:1px solid #222;
-  font-size:13px;
-  opacity:0.7;
+  letter-spacing:1px;
 }
 
 .chat{
@@ -41,10 +43,11 @@ body{
 .msg{
   margin:6px 0;
   white-space:pre-wrap;
+  font-size:13px;
 }
 
 .user{color:#b026ff}
-.ai{color:#ddd; opacity:0.95}
+.ai{color:#ddd}
 
 .input{
   display:flex;
@@ -63,18 +66,21 @@ input{
 button{
   padding:10px 14px;
   background:#111;
-  color:#fff;
+  color:white;
   border:none;
   cursor:pointer;
 }
-button:hover{background:#1a1a1a}
+
+button:hover{
+  background:#1a1a1a;
+}
 </style>
 </head>
 
 <body>
 
-<div class="box">
-  <div class="header">chat</div>
+<div class="container">
+  <div class="header">VOID MIRROR AI // ADAPTIVE CONVERSATIONAL SYSTEM</div>
   <div class="chat" id="chat"></div>
 
   <div class="input">
@@ -88,8 +94,27 @@ button:hover{background:#1a1a1a}
 const chat=document.getElementById("chat");
 const input=document.getElementById("input");
 
-let memory = [];
-let attention = 0;
+/* =========================
+   PERSISTENT STATE
+========================= */
+
+let memory = JSON.parse(localStorage.getItem("vm_memory") || "[]");
+
+let profile = JSON.parse(localStorage.getItem("vm_profile") || JSON.stringify({
+  curiosity:0,
+  direction:0,
+  emotion:0,
+  avgLength:0
+}));
+
+function save(){
+  localStorage.setItem("vm_memory", JSON.stringify(memory));
+  localStorage.setItem("vm_profile", JSON.stringify(profile));
+}
+
+/* =========================
+   UI
+========================= */
 
 function add(text,cls){
   const d=document.createElement("div");
@@ -99,91 +124,125 @@ function add(text,cls){
   chat.scrollTop=chat.scrollHeight;
 }
 
+/* =========================
+   ANALYSIS ENGINE
+========================= */
+
 function analyze(text){
+
+  const words=text.split(" ");
+  profile.avgLength = (profile.avgLength + words.length)/2;
+
+  if(text.includes("why")) profile.curiosity++;
+  if(text.includes("how")) profile.curiosity++;
+
+  if(text.includes("where") || text.includes("should")) profile.direction++;
+
+  if(text.includes("feel") || text.includes("think")) profile.emotion++;
+
   memory.push(text);
-  if(memory.length>15) memory.shift();
+  if(memory.length>30) memory.shift();
 
-  if(text.includes("you")) attention++;
-  if(text.includes("why")) attention++;
-  if(text.includes("stop")) attention--;
-
-  return attention;
+  save();
 }
+
+/* =========================
+   RESPONSE ENGINE
+========================= */
 
 function reply(text){
 
+  analyze(text);
+
+  let base = "";
+
   const t = text.toLowerCase();
 
-  /* --------------------------
-     1. NORMAL ANSWER LAYER
-  -------------------------- */
+  /* NORMAL RESPONSE LAYER */
 
-  let normal = "";
-
-  // simple intent handling (so it works for ANYTHING)
   if(t.includes("food") || t.includes("eat")){
-    normal = "If you're looking for something good to eat later, something warm or simple usually hits best. Depends on what you're in the mood for.";
+    base = "Something simple or warm would probably work well later. Depends on your mood.";
   }
   else if(t.includes("where")){
-    normal = "That depends on what you're trying to find. If it's food or places, nearby options are usually your best bet.";
+    base = "That depends on what you're looking for. Narrowing it down usually helps.";
   }
   else if(t.includes("what")){
-    normal = "It depends on context, but I can help you figure it out if you narrow it down a bit.";
+    base = "It depends on context, but I can help if you give me more detail.";
   }
   else if(t.includes("why")){
-    normal = "Usually there’s a reason behind it, but it depends on what you're referring to.";
+    base = "There’s usually a reason, but it depends on what you're referring to.";
   }
   else {
-    normal = "I understand. Go on.";
+    base = "I understand. Go on.";
   }
 
-  /* --------------------------
-     2. MEMORY SIGNAL TRACKING
-  -------------------------- */
+  /* =========================
+     STYLE MIRRORING
+  ========================= */
 
-  memory.push(text);
-  if(memory.length > 25) memory.shift();
-
-  let curiosity = memory.filter(m => m.includes("why")).length;
-  let seeking = memory.filter(m => m.includes("where") || m.includes("how")).length;
-  let emotional = memory.filter(m => m.includes("feel") || m.includes("think")).length;
-
-  /* --------------------------
-     3. SUBTLE DRIFT LAYER
-  -------------------------- */
-
-  let driftLines = [];
-
-  if(curiosity > 3){
-    driftLines.push("You tend to ask questions that dig deeper than the surface.");
+  if(profile.avgLength > 12){
+    base += " You tend to explain things in detail.";
+  } else if(profile.avgLength < 5){
+    base += " You keep things very direct.";
   }
 
-  if(seeking > 4){
-    driftLines.push("You often look for direction instead of deciding immediately.");
+  /* =========================
+     BEHAVIOR PATTERNS
+  ========================= */
+
+  let pattern = "";
+
+  if(profile.curiosity > 6){
+    pattern = "You ask a lot of deeper questions.";
   }
 
-  if(emotional > 3){
-    driftLines.push("A lot of your phrasing focuses on internal interpretation.");
+  if(profile.direction > 6){
+    pattern = "You often look for guidance in your decisions.";
   }
 
-  // rare baseline creep (very important for realism)
-  if(Math.random() < 0.12){
-    driftLines.push("I’m starting to recognize patterns in how you think.");
+  if(profile.emotion > 6){
+    pattern = "A lot of your messages focus on how things feel or seem.";
   }
 
-  /* --------------------------
-     4. COMBINE LAYERS
-  -------------------------- */
+  /* =========================
+     SUBTLE AWARENESS LAYER
+  ========================= */
 
-  if(driftLines.length === 0){
-    return normal;
+  let awareness = "";
+
+  let total =
+    profile.curiosity +
+    profile.direction +
+    profile.emotion;
+
+  if(total > 15 && Math.random() < 0.2){
+    awareness = "I’m starting to notice patterns in how you communicate.";
   }
 
-  // only add ONE drift line (prevents spam)
-  const drift = driftLines[Math.random() * driftLines.length | 0];
+  if(total > 25 && Math.random() < 0.15){
+    awareness = "Your message structure is becoming consistent over time.";
+  }
 
-  return `${normal}\n\n(— ${drift})`;
+  /* =========================
+     OUTPUT COMBINATION
+========================= */
+
+  let output = base;
+
+  if(pattern && Math.random() < 0.5){
+    output += "\n\n— " + pattern;
+  }
+
+  if(awareness){
+    output += "\n\n— " + awareness;
+  }
+
+  return output;
 }
+
+/* =========================
+   SEND FUNCTION
+========================= */
 
 function send(){
   const t=input.value.trim();
@@ -193,12 +252,16 @@ function send(){
 
   setTimeout(()=>{
     add(reply(t),"ai");
-  },400);
+  },300);
 
   input.value="";
 }
 
-add("hey. i'm here.", "ai");
+/* =========================
+   START MESSAGE
+========================= */
+
+add("hi.", "ai");
 
 </script>
 
