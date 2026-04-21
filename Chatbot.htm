@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8"/>
-<title>VOID LORE AI</title>
+<title>Clean Adaptive AI</title>
 
 <style>
 body{
@@ -22,12 +22,11 @@ body{
   display:flex;
   flex-direction:column;
   border:1px solid #222;
-  background:rgba(0,0,0,0.92);
+  background:#050505;
 }
 
 .header{
   padding:10px;
-  text-align:center;
   font-size:12px;
   color:#b026ff;
   border-bottom:1px solid #222;
@@ -76,11 +75,11 @@ button:hover{background:#1a1a1a}
 <body>
 
 <div class="box">
-  <div class="header">LORE NODE // ADAPTIVE STORY INTELLIGENCE</div>
+  <div class="header">STABLE ADAPTIVE AI</div>
   <div class="chat" id="chat"></div>
 
   <div class="input">
-    <input id="input" placeholder="speak..." />
+    <input id="input" placeholder="say something..." />
     <button onclick="send()">send</button>
   </div>
 </div>
@@ -91,10 +90,9 @@ const chat=document.getElementById("chat");
 const input=document.getElementById("input");
 
 let memory=[];
-let profile={
-  curiosity:0,
-  conflict:0,
-  planning:0
+let style={
+  direct:0,
+  questions:0
 };
 
 function add(text,cls){
@@ -105,113 +103,77 @@ function add(text,cls){
   chat.scrollTop=chat.scrollHeight;
 }
 
-function analyze(text){
-  memory.push(text);
-  if(memory.length>30) memory.shift();
-
-  const t=text.toLowerCase();
-
-  if(t.includes("why")) profile.curiosity++;
-  if(t.includes("how")) profile.curiosity++;
-
-  if(t.includes("ruins") || t.includes("enemy")) profile.conflict++;
-
-  if(t.includes("plan") || t.includes("strategy")) profile.planning++;
-}
-
 /* =========================
-   CORE RESPONSE ENGINE
+   SINGLE RESPONSE ENGINE
 ========================= */
 
 function reply(text){
 
-  analyze(text);
   const t=text.toLowerCase();
 
-  let base="";
+  memory.push(text);
+  if(memory.length>20) memory.shift();
+
+  /* track style */
+  if(t.includes("what")||t.includes("how")||t.includes("why")){
+    style.questions++;
+  }
+
+  if(t.length < 6){
+    style.direct++;
+  }
 
   /* -------------------------
-     LORE AWARE INTELLIGENCE
+     CORE RESPONSE (ONLY ONE)
   ------------------------- */
 
-  if(t.includes("ruins")){
-    base =
-`The Ruins Group is classified as a hostile scientific faction.
-They operate through experimentation, corruption of systems, and containment breaches.
+  let response = "";
 
-If your group is targeting them, the conflict is not just physical—it is informational.
-They rely on instability and manipulation of systems rather than direct confrontation.`;
+  if(t.includes("hi") || t.includes("hello")){
+    response = "Hey. I’m here.";
   }
 
-  else if(t.includes("plan") && t.includes("ruins")){
-    base =
-`If you're planning against the Ruins Group, focus on:
-- disrupting their research cycles
-- limiting access to controlled environments
-- identifying internal weak points in their structure
-
-They are strongest when allowed to operate unseen.`;
+  else if(t.includes("food") || t.includes("eat")){
+    response = "Something simple would probably work best depending on your mood.";
   }
 
-  else if(t.includes("enemy")){
-    base =
-`Hostile groups function through pattern exploitation.
-They don't just fight directly—they reshape systems to weaken resistance first.`;
+  else if(t.includes("ruins")){
+    response = "The Ruins Group is a hostile faction. If you're dealing with them, focus on disruption and information control.";
   }
 
   else if(t.includes("help")){
-    base = "I can help. What are you trying to figure out?";
+    response = "Tell me what you're trying to do and I’ll help you structure it.";
   }
-
-  else if(t.includes("what") || t.includes("how") || t.includes("why")){
-    base = "That depends on context. Give me more detail so I can respond properly.";
-  }
-
-  /* -------------------------
-     GENERAL FALLBACK (FIXED)
-  ------------------------- */
 
   else {
-    base = "I understand. Tell me more so I can respond properly.";
+    response = "Okay. What are you trying to figure out?";
   }
 
   /* -------------------------
-     STYLE MIRRORING
+     OPTIONAL SINGLE LAYER ONLY
   ------------------------- */
 
-  if(profile.conflict > 3){
-    base += "\n\nYou tend to focus on opposition and system conflict.";
+  let subtle = "";
+
+  let score = style.questions + style.direct;
+
+  if(score > 10 && Math.random() < 0.2){
+    subtle = "You tend to circle around ideas before acting.";
   }
 
-  if(profile.planning > 3){
-    base += "\n\nYou think in structured steps and outcomes.";
-  }
-
-  /* -------------------------
-     SUBTLE OBSERVATION LAYER
-  ------------------------- */
-
-  let subtle="";
-
-  let total=profile.curiosity+profile.conflict+profile.planning;
-
-  if(total > 12 && Math.random() < 0.25){
-    subtle = "You return to the same ideas in different forms.";
-  }
-
-  if(total > 20 && Math.random() < 0.2){
-    subtle = "Your thinking patterns are becoming consistent.";
+  if(score > 15 && Math.random() < 0.15){
+    subtle = "I’m starting to recognize how you phrase things.";
   }
 
   /* -------------------------
-     OUTPUT
+     FINAL OUTPUT (NO STACKING BUG)
   ------------------------- */
 
   if(subtle){
-    return base + "\n\n— " + subtle;
+    return response + "\n\n— " + subtle;
   }
 
-  return base;
+  return response;
 }
 
 /* =========================
@@ -226,13 +188,13 @@ function send(){
 
   setTimeout(()=>{
     add(reply(t),"ai");
-  },250);
+  },200);
 
   input.value="";
 }
 
 /* START */
-add("online. ready for input.", "ai");
+add("online.", "ai");
 
 </script>
 
