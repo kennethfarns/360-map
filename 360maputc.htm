@@ -2,79 +2,164 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>UTC Globe (Double-Click Ready)</title>
+<title>Futuristic UTC Globe</title>
 <style>
-  body { margin: 0; overflow: hidden; background: black; }
+  body { margin: 0; background: black; overflow: hidden; font-family: monospace; color: #00ffff; }
+  #ui {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 10px;
+    border: 1px solid #00ffff;
+  }
+  input {
+    background: black;
+    color: #00ffff;
+    border: 1px solid #00ffff;
+    padding: 4px;
+  }
 </style>
 </head>
 <body>
 
-<canvas id="globe"></canvas>
+<div id="ui">
+  <div>Enter Coordinates:</div>
+  <input id="lat" placeholder="Latitude">
+  <input id="lng" placeholder="Longitude">
+  <button onclick="addPin()">Pin</button>
+</div>
+
+<canvas id="c"></canvas>
 
 <script>
-const canvas = document.getElementById("globe");
+const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+let W = canvas.width = window.innerWidth;
+let H = canvas.height = window.innerHeight;
 
 let rotation = 0;
+let zoom = 1;
+let dragging = false;
+let lastX = 0;
 
-function drawGlobe() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+let pins = [];
 
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2;
-  const radius = Math.min(cx, cy) * 0.8;
+function project(lat, lon) {
+  const r = Math.min(W,H)/2 * 0.8 * zoom;
+  const cx = W/2;
+  const cy = H/2;
 
-  // Draw sphere
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.fillStyle = "#0a0a0a";
-  ctx.fill();
-  ctx.strokeStyle = "#444";
-  ctx.stroke();
+  const phi = lat * Math.PI/180;
+  const theta = (lon + rotation) * Math.PI/180;
 
-  // Draw longitude lines
-  for (let i = -180; i <= 180; i += 30) {
-    const angle = (i + rotation) * Math.PI / 180;
-    ctx.beginPath();
-    for (let lat = -90; lat <= 90; lat++) {
-      const phi = lat * Math.PI / 180;
-      const x = cx + radius * Math.cos(phi) * Math.sin(angle);
-      const y = cy + radius * Math.sin(phi);
-      if (lat === -90) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = i === 0 ? "#00ffff" : "#333"; // UTC line highlighted
-    ctx.lineWidth = i === 0 ? 2 : 1;
-    ctx.stroke();
-  }
+  const x = cx + r * Math.cos(phi) * Math.sin(theta);
+  const y = cy + r * Math.sin(phi);
 
-  // Draw latitude lines
-  for (let lat = -60; lat <= 60; lat += 30) {
-    const phi = lat * Math.PI / 180;
-    ctx.beginPath();
-    for (let lon = -180; lon <= 180; lon++) {
-      const theta = (lon + rotation) * Math.PI / 180;
-      const x = cx + radius * Math.cos(phi) * Math.sin(theta);
-      const y = cy + radius * Math.sin(phi);
-      if (lon === -180) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = "#333";
-    ctx.stroke();
-  }
-
-  rotation += 0.3;
-  requestAnimationFrame(drawGlobe);
+  return {x,y};
 }
 
-drawGlobe();
+function draw() {
+  ctx.clearRect(0,0,W,H);
 
-window.addEventListener("resize", () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const cx = W/2;
+  const cy = H/2;
+  const r = Math.min(W,H)/2 * 0.8 * zoom;
+
+  // Glow background
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle = "#02040a";
+  ctx.fill();
+
+  // Grid
+  for(let lon=-180; lon<=180; lon+=30){
+    ctx.beginPath();
+    for(let lat=-90; lat<=90; lat++){
+      let p = project(lat, lon);
+      if(lat===-90) ctx.moveTo(p.x,p.y);
+      else ctx.lineTo(p.x,p.y);
+    }
+    ctx.strokeStyle = lon===0 ? "#00ffff" : "#0a3a3a";
+    ctx.lineWidth = lon===0 ? 2 : 1;
+    ctx.stroke();
+  }
+
+  for(let lat=-60; lat<=60; lat+=30){
+    ctx.beginPath();
+    for(let lon=-180; lon<=180; lon++){
+      let p = project(lat, lon);
+      if(lon===-180) ctx.moveTo(p.x,p.y);
+      else ctx.lineTo(p.x,p.y);
+    }
+    ctx.strokeStyle = "#0a3a3a";
+    ctx.stroke();
+  }
+
+  // UTC glow effect
+  ctx.shadowColor = "#00ffff";
+  ctx.shadowBlur = 15;
+
+  for(let lat=-90; lat<=90; lat++){
+    let p = project(lat,0);
+    ctx.fillStyle = "#00ffff";
+    ctx.fillRect(p.x,p.y,2,2);
+  }
+
+  ctx.shadowBlur = 0;
+
+  // Draw pins
+  pins.forEach(p=>{
+    let pos = project(p.lat, p.lng);
+
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 5, 0, Math.PI*2);
+    ctx.fillStyle = "red";
+    ctx.fill();
+
+    ctx.fillStyle = "#00ffff";
+    ctx.fillText(`(${p.lat},${p.lng})`, pos.x+8, pos.y);
+  });
+
+  rotation += 0.1;
+  requestAnimationFrame(draw);
+}
+
+draw();
+
+function addPin(){
+  let lat = parseFloat(document.getElementById("lat").value);
+  let lng = parseFloat(document.getElementById("lng").value);
+  if(!isNaN(lat) && !isNaN(lng)){
+    pins.push({lat,lng});
+  }
+}
+
+// Zoom with scroll
+canvas.addEventListener("wheel", e=>{
+  zoom += e.deltaY * -0.001;
+  zoom = Math.min(Math.max(0.5, zoom), 3);
+});
+
+// Drag rotate
+canvas.addEventListener("mousedown", e=>{
+  dragging = true;
+  lastX = e.clientX;
+});
+
+canvas.addEventListener("mouseup", ()=> dragging=false);
+
+canvas.addEventListener("mousemove", e=>{
+  if(dragging){
+    rotation += (e.clientX - lastX) * 0.5;
+    lastX = e.clientX;
+  }
+});
+
+window.addEventListener("resize", ()=>{
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
 });
 </script>
 
